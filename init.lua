@@ -397,17 +397,144 @@ do
     gh 'akinsho/bufferline.nvim',
   }
 
-  require('bufferline').setup {
+  local bufferline = require 'bufferline'
+
+  local normal_bg = {
+    attribute = 'bg',
+    highlight = 'Normal',
+  }
+
+  bufferline.setup {
     options = {
+      style_preset = bufferline.style_preset.minimal,
+
+      indicator = {
+        style = 'none',
+      },
+
+      separator_style = { '', '' },
+
+      show_buffer_close_icons = true,
+      show_close_icon = false,
+
       custom_filter = function(bufnr)
         local buftype = vim.bo[bufnr].buftype
+        local name = vim.api.nvim_buf_get_name(bufnr)
 
         if buftype == 'terminal' then return false end
+
+        if name == '' and not vim.bo[bufnr].modified then return false end
 
         return true
       end,
     },
+
+    highlights = {
+      fill = {
+        bg = normal_bg,
+      },
+
+      background = {
+        bg = normal_bg,
+        fg = '#565f89',
+      },
+
+      buffer_visible = {
+        bg = normal_bg,
+        fg = '#a9b1d6',
+      },
+
+      buffer_selected = {
+        bg = normal_bg,
+        fg = '#7aa2f7',
+        bold = true,
+        italic = false,
+      },
+
+      separator = {
+        bg = normal_bg,
+        fg = normal_bg,
+      },
+
+      separator_visible = {
+        bg = normal_bg,
+        fg = normal_bg,
+      },
+
+      separator_selected = {
+        bg = normal_bg,
+        fg = normal_bg,
+      },
+
+      indicator_selected = {
+        bg = normal_bg,
+        fg = normal_bg,
+      },
+
+      close_button = {
+        bg = normal_bg,
+        fg = '#565f89',
+      },
+
+      close_button_visible = {
+        bg = normal_bg,
+        fg = '#565f89',
+      },
+
+      close_button_selected = {
+        bg = normal_bg,
+        fg = '#7aa2f7',
+      },
+
+      modified = {
+        bg = normal_bg,
+      },
+
+      modified_visible = {
+        bg = normal_bg,
+      },
+
+      modified_selected = {
+        bg = normal_bg,
+      },
+    },
   }
+
+  local function fix_bufferline_backgrounds()
+    local normal = vim.api.nvim_get_hl(0, { name = 'Normal' })
+    local bg = normal.bg
+
+    local groups = {
+      'BufferLineFill',
+
+      'BufferLineBackground',
+      'BufferLineBufferVisible',
+      'BufferLineBufferSelected',
+
+      'BufferLineSeparator',
+      'BufferLineSeparatorVisible',
+      'BufferLineSeparatorSelected',
+
+      'BufferLineIndicatorSelected',
+
+      'BufferLineCloseButton',
+      'BufferLineCloseButtonVisible',
+      'BufferLineCloseButtonSelected',
+
+      'BufferLineModified',
+      'BufferLineModifiedVisible',
+      'BufferLineModifiedSelected',
+    }
+
+    for _, group in ipairs(groups) do
+      local hl = vim.api.nvim_get_hl(0, { name = group })
+      hl.bg = bg
+      vim.api.nvim_set_hl(0, group, hl)
+    end
+  end
+
+  fix_bufferline_backgrounds()
+
   -- Better Around/Inside textobjects
   --
   -- Examples:
