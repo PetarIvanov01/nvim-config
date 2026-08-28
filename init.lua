@@ -26,6 +26,7 @@ do
   vim.o.mouse = 'a'
 
   vim.o.showmode = false
+  vim.o.laststatus = 3
 
   -- Sync clipboard between OS and Neovim.
   --  Schedule the setting after `UiEnter` because it can increase startup-time.
@@ -115,8 +116,15 @@ do
     desc = 'Toggle file explorer',
   })
 
+  map('i', '<C-l>', function() require('blink.cmp').show() end, {
+    desc = 'Show completion',
+  })
   -- Custom Terminal Settings
   local c_terminal = require 'custom.terminal'
+
+  map('n', '<leader>gg', function() c_terminal.float 'lazygit' end, {
+    desc = '[G]it Lazy[G]it',
+  })
 
   map({ 'n' }, '<leader>tt', c_terminal.toggle, {
     desc = 'Toggle terminal',
@@ -207,6 +215,20 @@ do
     desc = 'Highlight when yanking (copying) text',
     group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
     callback = function() vim.hl.on_yank() end,
+  })
+
+  vim.api.nvim_create_autocmd('TermOpen', {
+    desc = 'Use custom terminal background',
+    group = vim.api.nvim_create_augroup('custom-terminal-highlight', { clear = true }),
+    callback = function()
+      -- vim.o.laststatus = 0
+      vim.wo.winhighlight = table.concat({
+        'Normal:TerminalNormal',
+        'NormalNC:TerminalNormal',
+        'SignColumn:TerminalNormal',
+        'EndOfBuffer:TerminalNormal',
+      }, ',')
+    end,
   })
 end
 
@@ -353,7 +375,9 @@ do
   -- Like many other themes, this one has different styles, and you could load
   -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
   vim.cmd.colorscheme 'tokyonight-night'
-
+  vim.api.nvim_set_hl(0, 'TerminalNormal', {
+    bg = '#11111b',
+  })
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
   require('todo-comments').setup { signs = false }
@@ -373,8 +397,17 @@ do
     gh 'akinsho/bufferline.nvim',
   }
 
-  require('bufferline').setup {}
+  require('bufferline').setup {
+    options = {
+      custom_filter = function(bufnr)
+        local buftype = vim.bo[bufnr].buftype
 
+        if buftype == 'terminal' then return false end
+
+        return true
+      end,
+    },
+  }
   -- Better Around/Inside textobjects
   --
   -- Examples:
@@ -422,8 +455,20 @@ do
   -- cursor location to LINE:COLUMN
   ---@diagnostic disable-next-line: duplicate-set-field
   statusline.section_location = function() return '%2l:%-2v' end
+  ---@diagnostic disable-next-line: duplicate-set-field
+  statusline.section_fileinfo = function() return '%y' end
 
-  -- ... and there is more!
+  ---@diagnostic disable-next-line: duplicate-set-field
+  statusline.section_git = function()
+    local branch = vim.b.gitsigns_head
+
+    if not branch or branch == '' then return '' end
+
+    return branch
+  end
+
+  ---@diagnostic disable-next-line: duplicate-set-field
+  statusline.section_diff = function() return '' end
   --  Check out: https://github.com/nvim-mini/mini.nvim
 end
 
@@ -702,7 +747,6 @@ do
     ts_ls = {},
     html = {},
     cssls = {},
-    stylua = {}, -- Used to format Lua code
 
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
@@ -777,12 +821,19 @@ end
 -- conform.nvim setup and keymap
 -- ============================================================
 do
-  -- [[ Formatting ]]
   vim.pack.add { gh 'stevearc/conform.nvim' }
-  require('conform').setup {
-    notify_on_error = false,
+
+  local conform = require 'conform'
+
+  conform.setup {
+    notify_on_error = true,
+    notify_no_formatters = true,
+
+    default_format_opts = {
+      lsp_format = 'fallback',
+    },
+
     format_on_save = function(bufnr)
-      -- You can specify filetypes to autoformat on save here:
       local enabled_filetypes = {
         lua = true,
         javascript = true,
@@ -790,41 +841,48 @@ do
         typescript = true,
         typescriptreact = true,
         html = true,
-        css = false,
+        css = true,
         json = true,
         jsonc = true,
       }
-      if enabled_filetypes[vim.bo[bufnr].filetype] then
-        return { timeout_ms = 500 }
-      else
-        return nil
-      end
+
+      if enabled_filetypes[vim.bo[bufnr].filetype] then return {
+        timeout_ms = 10000,
+        lsp_format = 'fallback',
+      } end
     end,
-    default_format_opts = {
-      lsp_format = 'fallback', -- Use external formatters if configured below, otherwise use LSP formatting. Set to `false` to disable LSP formatting entirely.
-    },
-    -- You can also specify external formatters in here.
+
     formatters_by_ft = {
-      -- rust = { 'rustfmt' },
-      -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
-      --
-      -- You can use 'stop_after_first' to run the first available formatter from the list
+      lua = { 'stylua' },
+
       javascript = { 'prettier' },
       javascriptreact = { 'prettier' },
       typescript = { 'prettier' },
       typescriptreact = { 'prettier' },
+
       html = { 'prettier' },
       css = { 'prettier' },
+
       json = { 'prettier' },
       jsonc = { 'prettier' },
     },
   }
 
-  vim.keymap.set({ 'n', 'v' }, '<leader>f', function() require('conform').format { async = true } end, { desc = '[F]ormat buffer' })
-end
-
--- ============================================================
+  vim.keymap.set(
+    { 'n', 'v' },
+    '<leader>f',
+    function()
+      conform.format {
+        async = false,
+        timeout_ms = 10000,
+        lsp_format = 'fallback',
+      }
+    end,
+    {
+      desc = '[F]ormat buffer',
+    }
+  )
+end -- ============================================================
 -- SECTION 8: AUTOCOMPLETE & SNIPPETS
 -- blink.cmp and luasnip setup
 -- ============================================================
