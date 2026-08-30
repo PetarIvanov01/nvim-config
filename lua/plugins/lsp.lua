@@ -13,7 +13,7 @@ vim.api.nvim_create_autocmd('lspattach', {
 
     map('grn', vim.lsp.buf.rename, '[r]e[n]ame')
     map('gra', vim.lsp.buf.code_action, '[g]oto code [a]ction', { 'n', 'x' })
-    map('grd', vim.lsp.buf.declaration, '[g]oto [d]eclaration')
+    map('grD', vim.lsp.buf.declaration, '[g]oto [d]eclaration')
 
     local client = vim.lsp.get_client_by_id(event.data.client_id)
     if client and client:supports_method('textdocument/documenthighlight', event.buf) then
