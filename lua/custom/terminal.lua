@@ -1,12 +1,6 @@
 local M = {}
 
-local shells = {
-  bash = 'C:/Users/petar.iva/AppData/Local/Programs/Git/bin/bash.exe',
-  cmd = 'cmd.exe',
-  powershell = 'powershell.exe',
-}
-
-local shell = shells.bash
+local shell = require 'config.shell'
 
 local current = nil
 
@@ -59,15 +53,7 @@ function M.new()
 
   vim.cmd 'enew'
 
-  local command
-
-  if shell == shells.bash then
-    command = { shell, '--login', '-i' }
-  else
-    command = { shell }
-  end
-
-  local job_id = vim.fn.jobstart(command, {
+  local job_id = vim.fn.jobstart(shell.terminal_command(), {
     term = true,
   })
 

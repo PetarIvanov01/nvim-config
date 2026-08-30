@@ -1,4 +1,5 @@
 require 'config.options'
+require 'config.shell'
 require 'config.keymaps'
 require 'config.autocmds'
 

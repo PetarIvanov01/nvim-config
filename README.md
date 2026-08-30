@@ -18,6 +18,7 @@ Personal Neovim configuration for Windows, organized into core settings, plugin 
 | --- | --- |
 | `init.lua` | Loads every module in dependency order |
 | `lua/config/options.lua` | Leaders, globals, and editor options |
+| `lua/config/shell.lua` | Shared Bash, Command Prompt, and PowerShell profiles |
 | `lua/config/keymaps.lua` | Global mappings and diagnostics |
 | `lua/config/autocmds.lua` | General and terminal highlight autocmds |
 | `lua/config/pack.lua` | `vim.pack` build hooks and GitHub URL helper |
@@ -42,6 +43,32 @@ Personal Neovim configuration for Windows, organized into core settings, plugin 
 | Visual | Visual or selection mode |
 | Insert | Insert mode |
 | Terminal | Terminal-input mode |
+
+## Shell selection
+
+The shell used by `:!`, filters such as `:.!command`, and custom terminal windows is selected in `lua/config/shell.lua`:
+
+```lua
+M.selected = 'bash'
+```
+
+Change that value to one of the configured profiles:
+
+| Value | Shell | Example command |
+| --- | --- | --- |
+| `'bash'` | Git Bash | `:!ls` |
+| `'cmd'` | Command Prompt | `:!dir` |
+| `'powershell'` | Windows PowerShell | `:!Get-ChildItem` |
+
+Each profile sets its executable, command flag, quoting, redirection, and terminal arguments together. Restart Neovim after changing the selected profile.
+
+Useful forms:
+
+- `:!command` runs a command and displays its output.
+- `:.!command` replaces the current line with the command output.
+- `:read !command` inserts the command output below the current line.
+- `:%!command` filters the entire buffer through the command.
+- `:set shell? shellcmdflag?` displays the active executable and command flag.
 
 ## General editing and windows
 
@@ -114,7 +141,8 @@ The LSP mappings below are buffer-local and appear only after a language server 
 | Normal/Visual | `gra` | Request a code action |
 | Normal | `grr` | Find references with Telescope |
 | Normal | `gri` | Find implementations with Telescope |
-| Normal | `grd` | Go to declaration; this later mapping replaces Telescope's definition mapping |
+| Normal | `grd` | Find definitions with Telescope |
+| Normal | `grD` | Go to the declaration with LSP |
 | Normal | `grt` | Find type definitions with Telescope |
 | Normal | `go` | Search document symbols |
 | Normal | `gw` | Search workspace symbols |
@@ -169,6 +197,20 @@ Completion sources are LSP, filesystem paths, and LuaSnip snippets. Documentatio
 
 `vim-visual-multi` is installed with its upstream default mappings. Use `:help vm-mappings` for its complete multi-cursor key reference.
 
+## Folding
+
+Folds are calculated from Treesitter syntax and start open, so files remain fully visible until a fold command is used.
+
+| Mode | Key | Action |
+| --- | --- | --- |
+| Normal | `zc` | Close the fold under the cursor |
+| Normal | `zo` | Open the fold under the cursor |
+| Normal | `za` | Toggle the fold under the cursor |
+| Normal | `zM` | Close all folds |
+| Normal | `zR` | Open all folds |
+| Normal | `zj` | Move to the next fold |
+| Normal | `zk` | Move to the previous fold |
+
 ## Custom terminals and Git
 
 | Mode | Key | Action |
@@ -203,7 +245,6 @@ Which-key opens immediately after a recognized prefix and groups search under `<
 These behaviors were present before the structural refactor and have intentionally not been changed:
 
 - The Treesitter build hook invokes lowercase `tsupdate`; the interactive command is `TSUpdate`.
-- `grd` is assigned first to Telescope definitions and then to LSP declarations. The later declaration mapping wins.
 - Several lowercase LSP protocol/configuration fields and lowercase Neovim severity constants may prevent their intended behavior.
 - When Nerd Font support is enabled, the UI setup calls nonexistent global `miniicons` instead of `MiniIcons`.
 
