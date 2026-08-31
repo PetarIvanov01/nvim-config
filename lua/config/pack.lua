@@ -7,7 +7,7 @@ local function run_build(name, cmd, cwd)
     local stdout = result.stdout or ''
     local output = stderr ~= '' and stderr or stdout
     if output == '' then output = 'no output from build command.' end
-    vim.notify(('build failed for %s:\n%s'):format(name, output), vim.log.levels.error)
+    vim.notify(('build failed for %s:\n%s'):format(name, output), vim.log.levels.ERROR)
   end
 end
 
@@ -29,7 +29,7 @@ vim.api.nvim_create_autocmd('packchanged', {
 
     if name == 'nvim-treesitter' then
       if not ev.data.active then vim.cmd.packadd 'nvim-treesitter' end
-      vim.cmd 'tsupdate'
+      vim.cmd 'TSUpdate'
       return
     end
   end,

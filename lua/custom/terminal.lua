@@ -100,6 +100,29 @@ function M.toggle()
   show(current)
 end
 
+function M.focus()
+  local list = terminals()
+
+  -- No terminal yet -> create the first one
+  if #list == 0 then
+    M.new()
+    return
+  end
+
+  local win = terminal_window()
+
+  -- Visible -> just move focus to it
+  if win then
+    vim.api.nvim_set_current_win(win)
+    return
+  end
+
+  -- Hidden -> open and focus it
+  if not current or not vim.api.nvim_buf_is_valid(current) then current = list[1] end
+
+  show(current)
+end
+
 function M.next()
   local list = terminals()
 

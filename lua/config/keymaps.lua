@@ -29,6 +29,7 @@ map('n', '<leader>gg', function() terminal.float 'lazygit' end, {
   desc = '[g]it lazy[g]it',
 })
 map({ 'n' }, '<leader>tt', terminal.toggle, { desc = 'toggle terminal' })
+map({ 'n' }, '<leader>tf', terminal.focus, { desc = 'focus terminal' })
 map({ 'n' }, '<leader>tn', terminal.new, { desc = 'new terminal' })
 map({ 'n' }, '<leader>t]', terminal.next, { desc = 'next terminal' })
 map({ 'n' }, '<leader>t[', terminal.prev, { desc = 'previous terminal' })
@@ -40,7 +41,7 @@ vim.diagnostic.config {
   update_in_insert = false,
   severity_sort = true,
   float = { border = 'rounded', source = 'if_many' },
-  underline = { severity = { min = vim.diagnostic.severity.warn } },
+  underline = { severity = { min = vim.diagnostic.severity.WARN } },
   virtual_text = true,
   virtual_lines = false,
   jump = {

@@ -218,6 +218,7 @@ Folds are calculated from Treesitter syntax and start open, so files remain full
 | Mode | Key | Action |
 | --- | --- | --- |
 | Normal | `<leader>tt` | Show or hide the terminal split; creates one when necessary |
+| Normal | `<leader>tf` | Focus the terminal split without toggling it closed; creates and focuses one when necessary |
 | Normal | `<leader>tn` | Create a new terminal |
 | Normal | `<leader>t]` | Show the next managed terminal |
 | Normal | `<leader>t[` | Show the previous managed terminal |
@@ -242,13 +243,3 @@ Managed terminals open in Terminal-Normal mode in a 12-line bottom split, remain
 | `:messages` | Review recent notifications and errors |
 
 Which-key opens immediately after a recognized prefix and groups search under `<leader>s`, terminal actions under `<leader>t`, and LSP actions under `gr`.
-
-## Known preserved issues
-
-These behaviors were present before the structural refactor and have intentionally not been changed:
-
-- The Treesitter build hook invokes lowercase `tsupdate`; the interactive command is `TSUpdate`.
-- Several lowercase LSP protocol/configuration fields and lowercase Neovim severity constants may prevent their intended behavior.
-- When Nerd Font support is enabled, the UI setup calls nonexistent global `miniicons` instead of `MiniIcons`.
-
-Those issues should be changed only as a deliberate behavioral follow-up.

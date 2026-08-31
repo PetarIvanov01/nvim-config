@@ -16,7 +16,7 @@ vim.api.nvim_create_autocmd('lspattach', {
     map('grD', vim.lsp.buf.declaration, '[g]oto [d]eclaration')
 
     local client = vim.lsp.get_client_by_id(event.data.client_id)
-    if client and client:supports_method('textdocument/documenthighlight', event.buf) then
+    if client and client:supports_method('textDocument/documentHighlight', event.buf) then
       local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
 
       vim.api.nvim_create_autocmd({ 'cursorhold', 'cursorholdi' }, {
@@ -40,7 +40,7 @@ vim.api.nvim_create_autocmd('lspattach', {
       })
     end
 
-    if client and client:supports_method('textdocument/inlayhint', event.buf) then
+    if client and client:supports_method('textDocument/inlayHint', event.buf) then
       map('<leader>th', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }) end, '[t]oggle inlay [h]ints')
     end
   end,
@@ -54,7 +54,7 @@ local servers = {
   lua_ls = {
     on_init = function(client)
       -- Formatting is handled by Conform and StyLua.
-      client.server_capabilities.documentformattingprovider = false
+      client.server_capabilities.documentFormattingProvider = false
 
       if client.workspace_folders then
         local path = client.workspace_folders[1].name

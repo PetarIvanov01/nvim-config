@@ -330,6 +330,7 @@ Treesitter calculates folds; files start fully open.
 | Key | Action |
 | --- | --- |
 | `<leader>tt` | Toggle managed terminal split |
+| `<leader>tf` | Focus managed terminal split without toggling it closed |
 | `<leader>tn` | Create another terminal |
 | `<leader>t]` / `<leader>t[` | Next / previous managed terminal |
 | `<leader>tc` | Close current managed terminal; last one is protected |
