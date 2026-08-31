@@ -10,24 +10,6 @@ conform.setup {
   default_format_opts = {
     lsp_format = 'fallback',
   },
-  format_on_save = function(bufnr)
-    local enabled_filetypes = {
-      lua = true,
-      javascript = true,
-      javascriptreact = true,
-      typescript = true,
-      typescriptreact = true,
-      html = true,
-      css = true,
-      json = true,
-      jsonc = true,
-    }
-
-    if enabled_filetypes[vim.bo[bufnr].filetype] then return {
-      timeout_ms = 10000,
-      lsp_format = 'fallback',
-    } end
-  end,
   formatters_by_ft = {
     lua = { 'stylua' },
     javascript = { 'prettier' },
