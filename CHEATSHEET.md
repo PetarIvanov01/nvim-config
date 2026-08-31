@@ -334,9 +334,10 @@ Treesitter calculates folds; files start fully open.
 | `<leader>t]` / `<leader>t[` | Next / previous managed terminal |
 | `<leader>tc` | Close current managed terminal; last one is protected |
 | `<leader>gg` | Open Lazygit in floating terminal |
+| Terminal-Normal `i` | Start typing in the terminal |
 | Terminal `<Esc><Esc>` | Leave Terminal mode |
 
-Shell selection lives in `lua/config/shell.lua`: `bash`, `cmd`, or `powershell`.
+Managed terminals open in Terminal-Normal mode, so terminal switching and window navigation work immediately. Press `i` to type. Shell selection lives in `lua/config/shell.lua`: `bash`, `cmd`, or `powershell`.
 
 ## External shell commands and filters
 

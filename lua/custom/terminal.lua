@@ -41,7 +41,9 @@ local function show(buf)
 
   current = buf
 
-  vim.cmd 'startinsert'
+  -- Open managed terminals in Terminal-Normal mode so terminal and window
+  -- navigation mappings are immediately available. Press `i` to type.
+  vim.cmd 'stopinsert'
 end
 
 function M.new()
@@ -72,7 +74,7 @@ function M.new()
 
   current = buf
 
-  vim.cmd 'startinsert'
+  vim.cmd 'stopinsert'
 end
 
 function M.toggle()
