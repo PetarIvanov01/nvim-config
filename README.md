@@ -11,7 +11,7 @@ See [CHEATSHEET.md](CHEATSHEET.md) for the command and key reference.
 - [ripgrep](https://github.com/BurntSushi/ripgrep) for Telescope live grep
 - [lazygit](https://github.com/jesseduffield/lazygit) for the floating Git interface
 - `stylua` and `prettier` on `PATH` for configured formatting
-- Git Bash at `C:/Users/petar.iva/AppData/Local/Programs/Git/bin/bash.exe` for custom terminals
+- Git for Windows, for Git Bash and custom terminals — `bash.exe` is auto-detected from `git` on `PATH` or the standard Git for Windows install locations (see `lua/config/shell.lua`)
 - Optional: `make` for Telescope's native FZF extension and supported plugin build hooks
 
 ## Configuration layout

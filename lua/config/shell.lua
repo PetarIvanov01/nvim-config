@@ -2,9 +2,42 @@ local M = {}
 
 M.selected = 'bash'
 
+---@return string[]
+local function candidate_git_roots()
+  local roots = {}
+
+  -- Git for Windows ships git.exe under <root>/bin or <root>/cmd and
+  -- bash.exe under <root>/bin, so derive the root from whatever `git` the
+  -- shell would actually run.
+  local git_exe = vim.fn.exepath 'git'
+  if git_exe ~= '' then table.insert(roots, vim.fs.dirname(vim.fs.dirname(git_exe))) end
+
+  for _, env_name in ipairs { 'ProgramFiles', 'ProgramFiles(x86)' } do
+    local dir = vim.env[env_name]
+    if dir then table.insert(roots, dir .. '/Git') end
+  end
+
+  -- Per-user installs (the installer's default when not run as admin).
+  if vim.env.LOCALAPPDATA then table.insert(roots, vim.env.LOCALAPPDATA .. '/Programs/Git') end
+
+  return roots
+end
+
+---Locate Git for Windows' bash.exe without hardcoding a machine-specific path.
+---@return string
+local function find_git_bash()
+  for _, root in ipairs(candidate_git_roots()) do
+    local candidate = root .. '/bin/bash.exe'
+    if vim.uv.fs_stat(candidate) then return candidate end
+  end
+
+  -- Fall back to whatever `bash` resolves to on PATH.
+  return vim.fn.exepath 'bash'
+end
+
 M.profiles = {
   bash = {
-    executable = 'C:/Users/petar.iva/AppData/Local/Programs/Git/bin/bash.exe',
+    executable = find_git_bash(),
     terminal_args = { '--login', '-i' },
     shellcmdflag = '-c',
     shellquote = '',
@@ -41,6 +74,11 @@ function M.setup(name)
 
   local profile = M.profiles[name]
   assert(profile, ('unknown shell profile: %s'):format(name))
+
+  if profile.executable == '' then
+    vim.notify(('shell profile %q: could not locate its executable; falling back to Neovim defaults'):format(name), vim.log.levels.WARN)
+    return
+  end
 
   M.selected = name
 
