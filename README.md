@@ -2,7 +2,7 @@
 
 Personal Neovim configuration for Windows, organized into core settings, plugin configuration, and custom terminal support. It uses Neovim's built-in `vim.pack` package manager and sets both the global and local leader to `Space`.
 
-See [CHEATSHEET.md](CHEATSHEET.md) for the command and key reference.
+See [CHEATSHEET.md](CHEATSHEET.md) for the command and key reference
 
 ## Requirements
 
