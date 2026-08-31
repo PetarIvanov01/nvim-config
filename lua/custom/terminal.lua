@@ -1,12 +1,6 @@
 local M = {}
 
-local shells = {
-  bash = 'C:/Users/petar.iva/AppData/Local/Programs/Git/bin/bash.exe',
-  cmd = 'cmd.exe',
-  powershell = 'powershell.exe',
-}
-
-local shell = shells.bash
+local shell = require 'config.shell'
 
 local current = nil
 
@@ -47,7 +41,9 @@ local function show(buf)
 
   current = buf
 
-  vim.cmd 'startinsert'
+  -- Open managed terminals in Terminal-Normal mode so terminal and window
+  -- navigation mappings are immediately available. Press `i` to type.
+  vim.cmd 'stopinsert'
 end
 
 function M.new()
@@ -59,15 +55,7 @@ function M.new()
 
   vim.cmd 'enew'
 
-  local command
-
-  if shell == shells.bash then
-    command = { shell, '--login', '-i' }
-  else
-    command = { shell }
-  end
-
-  local job_id = vim.fn.jobstart(command, {
+  local job_id = vim.fn.jobstart(shell.terminal_command(), {
     term = true,
   })
 
@@ -86,7 +74,7 @@ function M.new()
 
   current = buf
 
-  vim.cmd 'startinsert'
+  vim.cmd 'stopinsert'
 end
 
 function M.toggle()
@@ -107,6 +95,29 @@ function M.toggle()
   end
 
   -- Hidden -> show current terminal again
+  if not current or not vim.api.nvim_buf_is_valid(current) then current = list[1] end
+
+  show(current)
+end
+
+function M.focus()
+  local list = terminals()
+
+  -- No terminal yet -> create the first one
+  if #list == 0 then
+    M.new()
+    return
+  end
+
+  local win = terminal_window()
+
+  -- Visible -> just move focus to it
+  if win then
+    vim.api.nvim_set_current_win(win)
+    return
+  end
+
+  -- Hidden -> open and focus it
   if not current or not vim.api.nvim_buf_is_valid(current) then current = list[1] end
 
   show(current)
