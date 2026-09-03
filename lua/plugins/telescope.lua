@@ -93,3 +93,22 @@ vim.keymap.set('n', '<leader>bb', '<cmd>enew<cr>', {
 vim.keymap.set('n', '<leader>sb', require('telescope.builtin').buffers, {
   desc = '[s]earch [b]uffers',
 })
+
+local theme_state = require 'config.theme'
+local actions = require 'telescope.actions'
+local action_state = require 'telescope.actions.state'
+
+vim.keymap.set('n', '<leader>uc', function()
+  builtin.colorscheme {
+    enable_preview = true,
+    attach_mappings = function(_, _)
+      actions.select_default:enhance {
+        post = function()
+          local entry = action_state.get_selected_entry()
+          if entry then theme_state.save(entry.value) end
+        end,
+      }
+      return true
+    end,
+  }
+end, { desc = '[u]i [c]olorscheme picker' })
