@@ -31,10 +31,26 @@ local required = {
   { exe = 'rg', reason = "Telescope live grep (<leader>sg), grep_string (<leader>sw), and :TSC's tsconfig discovery" },
 }
 
--- Tools that disable one feature each when missing, rather than breaking startup.
+local is_win = vim.fn.has 'win32' == 1
+
+-- Tools that disable one feature each when missing, rather than breaking
+-- startup. `when = false` drops an entry that cannot apply on this platform --
+-- a warning for a tool nothing here would ever call is just noise.
 local optional = {
-  { exe = 'make', reason = "telescope-fzf-native is skipped entirely without it (see plugins/telescope.lua); LuaSnip's jsregexp is not built" },
-  { exe = 'unzip', reason = 'some Mason packages cannot be extracted' },
+  -- On Windows `make` costs exactly one thing: the native fzf sorter. The other
+  -- build hook it drives, LuaSnip's jsregexp, is guarded by `has('win32') ~= 1`
+  -- in config/pack.lua, so it is skipped on this platform whether or not `make`
+  -- exists -- installing `make` would not bring it back.
+  {
+    exe = 'make',
+    reason = 'telescope-fzf-native is never added to vim.pack at all without it (plugins/telescope.lua)'
+      .. (is_win and '' or "; LuaSnip's jsregexp is not built"),
+  },
+  -- Mason only shells out to `unzip` on Unix; on Windows it extracts with
+  -- PowerShell's Expand-Archive instead (mason-core/installer/managers/std.lua,
+  -- `platform.when { unix = ..., win = ... }`), and Mason's own health check
+  -- treats unzip as relaxed. Nothing here would call it on Windows.
+  { exe = 'unzip', reason = 'some Mason packages cannot be extracted', when = not is_win },
   { exe = 'lazygit', reason = 'the floating Git UI on <leader>gg' },
   { exe = 'stylua', reason = 'Lua formatting on <leader>f; Conform falls back to LSP formatting' },
   { exe = 'prettier', reason = 'JS/TS/HTML/CSS/JSON formatting on <leader>f; Conform falls back to LSP formatting' },
@@ -55,7 +71,10 @@ local check_external_reqs = function()
   end
 
   for _, tool in ipairs(optional) do
-    if vim.fn.executable(tool.exe) == 1 then
+    if tool.when == false then
+      -- Not applicable on this platform; say so once instead of warning forever.
+      vim.health.info(string.format("Skipped check for '%s' -- not used on this platform", tool.exe))
+    elseif vim.fn.executable(tool.exe) == 1 then
       vim.health.ok(string.format("Found executable: '%s'", tool.exe))
     else
       vim.health.warn(string.format("Could not find executable: '%s' -- %s", tool.exe, tool.reason))
