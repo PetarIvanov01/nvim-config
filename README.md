@@ -32,7 +32,6 @@ See [CHEATSHEET.md](CHEATSHEET.md) for the command and key reference
 | `lua/plugins/completion.lua` | Blink completion and LuaSnip |
 | `lua/plugins/treesitter.lua` | Parser installation, attachment, and folding |
 | `lua/plugins/neo-tree.lua` | File explorer setup |
-| `lua/config/typescript.lua` | Resolves `tsc` vs `vtsls` per project TypeScript version (currently unused, see [Diagnostics and LSP](#diagnostics-and-lsp)) |
 | `lua/custom/terminal.lua` | Persistent split terminals and floating commands |
 | `lua/custom/plugins/init.lua` | Auto-loads any extra plugin files dropped into `lua/custom/plugins/` |
 | `lua/kickstart/health.lua` | `:checkhealth` support for Neovim version and external tools |
@@ -156,7 +155,7 @@ The LSP mappings below are buffer-local and appear only after a language server 
 
 Configured language servers:
 
-- TypeScript: `vtsls` is the default for every project, regardless of the project's own TypeScript version. `tsc` (TypeScript 7+'s native `--lsp` server) is defined but dormant — it crashed independently in testing and in real use, so it's gated behind `prefer_tsc` in `lua/plugins/lsp.lua`, currently `false`. Flipping that one flag back to `true` restores the original per-project version gate in `lua/config/typescript.lua` (TypeScript 7+ → `tsc`, older → `vtsls`) unchanged.
+- TypeScript: `vtsls`, for every project regardless of its own TypeScript version. `tsc` (TypeScript 7+'s native `--lsp` server) was tried and removed after it crashed independently in testing and in real use — see commit `f5e9eb3` to revive the per-project version gate if that ever proves stable.
 - Linting: `eslint` and `oxlint`, run alongside each other; fixes are applied on demand via `:LspEslintFixAll` and `:LspOxlintFixAll`
 - HTML (`html`)
 - CSS (`cssls`)

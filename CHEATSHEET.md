@@ -234,7 +234,7 @@ These mappings appear only when a language server attaches to the buffer.
 | `:TSC` | Type-check with the project's real, pinned `tsc` (not vtsls's bundled version) |
 | `:TSCStop` | Cancel a running `:TSC` |
 
-Configured servers: `vtsls` for TypeScript (default for every project), `eslint` and `oxlint` for linting, plus `html`, `cssls`, and `lua_ls`. `tsc` is also defined but dormant behind `prefer_tsc` in `lua/plugins/lsp.lua` — off after repeated crashes, flip it back on to restore the original per-project TypeScript-version gate.
+Configured servers: `vtsls` for TypeScript (every project, regardless of its TypeScript version), `eslint` and `oxlint` for linting, plus `html`, `cssls`, and `lua_ls`. `tsc` (TypeScript 7+'s native `--lsp` server) was tried and removed after repeated crashes — see commit `f5e9eb3` to revive the per-project version gate if that ever proves stable.
 
 Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its
 whole `plugin/` script — so `:LspInfo`, `:LspEslintFixAll`, and
