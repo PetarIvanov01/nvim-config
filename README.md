@@ -124,7 +124,7 @@ Useful commands:
 | Normal | `<leader>sf` | Find files |
 | Normal | `<leader>ss` | Select a Telescope picker |
 | Normal/Visual | `<leader>sw` | Search for the word under the cursor or selection |
-| Normal | `<leader>sg` | Search project text with live grep |
+| Normal | `<leader>sg` | Search project text with live grep, with ripgrep flag support (live-grep-args) |
 | Normal | `<leader>sd` | Search diagnostics |
 | Normal | `<leader>sr` | Resume the previous Telescope picker |
 | Normal | `<leader>s.` | Search recently opened files |
@@ -134,6 +134,23 @@ Useful commands:
 | Normal | `<leader>s/` | Live-grep only the currently open files |
 
 Use `:Telescope keymaps` to inspect all active mappings or `:Telescope builtin` to choose any available picker.
+
+`<leader>sg` uses [telescope-live-grep-args.nvim](https://github.com/nvim-telescope/telescope-live-grep-args.nvim), which lets ripgrep flags be typed directly into the prompt.
+
+**The flags must come first, or the search word must be quoted first.** The plugin decides how to parse the whole prompt based on its first character: if the prompt doesn't start with `-`, `'`, or `"`, the entire line — search word and all — is treated as one literal search string and flags are *not* applied. So `useState -tjs` silently searches for the literal text `useState -tjs` instead of filtering. Put the flag(s) before the search word instead, or quote the word first (which is what `<C-k>` does for you).
+
+Example prompts:
+
+| Prompt | Effect |
+| --- | --- |
+| `-tjs useState` | Search `useState`, only in JavaScript files |
+| `-Tjs useState` | Search `useState`, in every file except JavaScript |
+| `-g '*.md' foo` | Search `foo`, only in Markdown files |
+| `-g '!vendor/*' foo` | Search `foo`, skip anything under `vendor/` |
+| `-tlua -g '!vendor/*' foo` | Search `foo`, only in Lua files, and skip `vendor/` |
+| `"TODO: fix" -tjs` | Search the exact phrase `TODO: fix`, only in JavaScript files (quoting first also works) |
+
+`-t` (lowercase) means "only these file types"; `-T` (uppercase) means "every file type except these." `-g` matches by filename/path glob instead of file type, and a leading `!` in the glob excludes rather than includes. Flags can be combined in one prompt.
 
 ## Diagnostics and LSP
 

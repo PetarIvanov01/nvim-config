@@ -188,7 +188,7 @@ Mark workflow across files: set `mA` in the source file â†’ navigate anywhere â†
 | Key | Action |
 | --- | --- |
 | `<leader><leader>` / `<leader>sf` | Find files |
-| `<leader>sg` | Live grep project text |
+| `<leader>sg` | Live grep project text, with ripgrep flags (live-grep-args) |
 | `<leader>sw` | Search word under cursor or Visual selection |
 | `<leader>sh` | Search help tags |
 | `<leader>sk` | Search active keymaps |
@@ -204,6 +204,19 @@ Mark workflow across files: set `mA` in the source file â†’ navigate anywhere â†
 | `:Telescope builtin` | Choose any Telescope picker |
 
 Inside Telescope, use `<C-n>` / `<C-p>` to move, `<CR>` to open, and `<C-/>` in Insert mode or `?` in Normal mode to display picker mappings.
+
+In `<leader>sg`, flags must come **before** the search word, or the word must be quoted first â€” otherwise the whole prompt is treated as one literal string and flags are ignored (`useState -tjs` searches the literal text `useState -tjs`, it does not filter). `<C-k>` quotes the current search term for you; `<C-i>` appends ` --iglob ` for a quick glob filter.
+
+| Prompt | Effect |
+| --- | --- |
+| `-tjs useState` | Only search `.js` files |
+| `-Tjs useState` | Search everything except `.js` files |
+| `-g '*.md' foo` | Only search Markdown files |
+| `-g '!vendor/*' foo` | Skip everything under `vendor/` |
+| `-tlua -g '!vendor/*' foo` | Only Lua files, skipping `vendor/` |
+| `"TODO: fix" -tjs` | Search the exact phrase, only in `.js` files (quoting first also works) |
+
+`-t` = only these types, `-T` = all types except these, `-g` = filter by filename/path glob (`!` in the glob excludes).
 
 ## LSP and diagnostics
 
