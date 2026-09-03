@@ -30,7 +30,7 @@
 | `f{x}` / `F{x}` | Move to character forward / backward |
 | `t{x}` / `T{x}` | Move just before character forward / backward |
 | `;` / `,` | Repeat / reverse the last `f`, `F`, `t`, or `T` |
-| `H` / `M` / `L` | Top, middle, bottom visible screen line |
+| `M` | Middle visible screen line (`H` and `L` are remapped to buffer switching) |
 | `<C-d>` / `<C-u>` | Half-page down / up |
 | `<C-f>` / `<C-b>` | Full-page forward / backward |
 | `zz` / `zt` / `zb` | Center / top / bottom the current line |
@@ -44,7 +44,7 @@
 | `x` / `X` | Delete character under / before cursor |
 | `dd` / `D` | Delete line / to end of line |
 | `cc` / `C` | Change line / to end of line |
-| `yy` / `Y` | Yank line / line (`Y` behaves like `yy`) |
+| `yy` / `Y` | Yank line / yank to end of line (`Y` is `y$`, not `yy`) |
 | `p` / `P` | Paste after / before cursor |
 | `r{x}` / `R` | Replace one character / enter Replace mode |
 | `J` | Join current line with the next |
@@ -82,7 +82,7 @@
 | `:%s#old/path#new/path#g` | Use `#` as separator when text contains `/` |
 | `:%s/old/&-suffix/g` | `&` inserts the complete matched text in replacement |
 | `:%s/old/\=toupper(submatch(0))/g` | Use a Vim expression as replacement |
-| `:cfdo %s/old/new/gc | update` | Replace across every file in quickfix list |
+| `:cfdo %s/old/new/gc \| update` | Replace across every file in quickfix list |
 
 Confirmation keys for `c`: `y` replace, `n` skip, `a` replace all remaining, `q` quit, `l` replace then quit.
 
@@ -166,8 +166,8 @@ Mark workflow across files: set `mA` in the source file → navigate anywhere �
 
 | Key or command | Action |
 | --- | --- |
-| `<S-h>` / `<leader>bp` | Previous buffer |
-| `<S-l>` / `<leader>bn` | Next buffer |
+| `<S-h>` (`H`) / `<leader>bp` | Previous buffer |
+| `<S-l>` (`L`) / `<leader>bn` | Next buffer |
 | `<leader>bb` | New empty buffer |
 | `<leader>bd` | Delete current buffer |
 | `<leader>sb` | Search buffers with Telescope |
@@ -227,9 +227,16 @@ These mappings appear only when a language server attaches to the buffer.
 | `:lopen` / `:lclose` | Open / close location list |
 | `:lnext` / `:lprevious` | Next / previous location-list item |
 | `:Mason` | Inspect and manage language tools |
-| `:LspInfo` | Inspect attached language servers |
+| `:checkhealth vim.lsp` | Inspect attached language servers |
+| `:lsp restart` / `:lsp stop` | Restart / stop the clients attached to this buffer |
+| `:lsp enable {name}` / `:lsp disable {name}` | Turn one server on / off |
+| `:LspLog` | Open the LSP client log at its newest entries |
 
-Configured servers: TypeScript, HTML, CSS, and Lua.
+Configured servers: `tsc` and `vtsls` for TypeScript, `eslint` and `oxlint` for linting, plus `html`, `cssls`, and `lua_ls`.
+
+Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its
+whole `plugin/` script — so `:LspInfo`, `:LspEslintFixAll`, and
+`:LspOxlintFixAll` do not exist. `:LspLog` is redefined in `lua/plugins/lsp.lua`.
 
 ## Quickfix list
 
@@ -273,9 +280,10 @@ Typical workflow: place cursor on a word → `<C-n>` repeatedly → press `c` or
 | Visual `gsa{char}` | Surround selected text |
 | `gsd{char}` | Delete surrounding character, for example `gsd"` |
 | `gsr{old}{new}` | Replace surroundings, for example `gsr)'` |
-| `gsf{char}` | Find a surrounding character |
+| `gsf{char}` | Find the surrounding character to the left |
 | `gsh{char}` | Highlight a surrounding character |
-| `gsn` | Change how many lines Mini searches for surroundings |
+
+Append `n` or `l` to `gsd`, `gsr`, `gsf`, or `gsh` to act on the next or previous surrounding, for example `gsdn"`. Mini searches 20 lines for a surrounding (its default; `mini.ai` text objects use 500) and there is no mapping to change that at runtime.
 
 Standard text objects remain useful: `iw`, `aw`, `i"`, `a"`, `i'`, `i(`, `a(`, `i{`, `a{`, `it`, `at`, `ip`, `ap`.
 
@@ -298,9 +306,12 @@ Standard text objects remain useful: `iw`, `aw`, `i"`, `a"`, `i'`, `i(`, `a(`, `
 | --- | --- |
 | `<leader>f` | Format buffer or Visual selection with Conform |
 | `:ConformInfo` | Show formatter status for current buffer |
-| `:write` | Triggers format-on-save for configured filetypes |
+
+Formatting is manual: there is no format-on-save, so `<leader>f` is the only way to run Conform.
 
 Lua uses StyLua. JavaScript, JSX, TypeScript, TSX, HTML, CSS, JSON, and JSONC use Prettier. LSP formatting is the fallback.
+
+Trailing whitespace is trimmed automatically on every save, independent of Conform — except in Markdown and diff buffers, where trailing double-spaces are a hard line break.
 
 ## Folding
 

@@ -21,7 +21,6 @@ require('which-key').setup {
   spec = {
     { '<leader>s', group = '[s]earch', mode = { 'n', 'v' } },
     { '<leader>t', group = '[t]erminal' },
-    { '<leader>h', group = 'git [h]unk', mode = { 'n', 'v' } },
     { 'gr', group = 'lsp actions', mode = { 'n' } },
   },
 }
@@ -184,7 +183,6 @@ require('mini.surround').setup {
     find_left = 'gsf',
     highlight = 'gsh',
     replace = 'gsr',
-    update_n_lines = 'gsn',
   },
 }
 

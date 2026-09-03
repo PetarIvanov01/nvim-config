@@ -3,6 +3,21 @@ local gh = require('config.pack').github
 vim.pack.add { gh 'j-hui/fidget.nvim' }
 require('fidget').setup {}
 
+-- Nvim 0.12 provides a native `:lsp` command, which makes nvim-lspconfig bail
+-- out of its whole plugin/ script -- taking the `:LspLog` it used to define
+-- with it. Opens at the end of the file, where the newest entries are.
+vim.api.nvim_create_user_command('LspLog', function()
+  local path = vim.lsp.log.get_filename()
+
+  if vim.fn.filereadable(path) == 0 then
+    vim.notify('no LSP log written yet at ' .. path, vim.log.levels.INFO)
+    return
+  end
+
+  vim.cmd('tabnew ' .. vim.fn.fnameescape(path))
+  vim.cmd 'normal! G'
+end, { desc = 'open the LSP client log' })
+
 vim.api.nvim_create_autocmd('lspattach', {
   group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
   callback = function(event)
@@ -46,9 +61,53 @@ vim.api.nvim_create_autocmd('lspattach', {
   end,
 })
 
+vim.pack.add {
+  gh 'neovim/nvim-lspconfig',
+  gh 'mason-org/mason.nvim',
+  gh 'mason-org/mason-lspconfig.nvim',
+  gh 'whoissethdaniel/mason-tool-installer.nvim',
+}
+
+local ts = require 'config.typescript'
+
+-- Both TypeScript servers reuse vtsls's project-root logic, which resolves the
+-- nearest package-manager lockfile and declines Deno projects so denols can
+-- take them. Captured before vim.lsp.config() overwrites it below.
+local ts_root_dir = vim.lsp.config.vtsls.root_dir
+
 ---@type table<string, vim.lsp.config>
 local servers = {
-  ts_ls = {},
+  -- TypeScript 7+. Overrides upstream's cmd/root_dir so the binary chosen by
+  -- the version probe is the one actually launched; upstream's inlay-hint and
+  -- code-lens settings still merge in underneath.
+  tsc = {
+    cmd = function(dispatchers, config)
+      local root = (config or {}).root_dir or vim.fn.getcwd()
+      local bin = ts.native_bin(root) or 'tsc'
+      return vim.lsp.rpc.start({ bin, '--lsp', '--stdio' }, dispatchers)
+    end,
+    root_dir = function(bufnr, on_dir)
+      ts_root_dir(bufnr, function(root)
+        if ts.native_bin(root) then on_dir(root) end
+      end)
+    end,
+  },
+  -- Fallback for projects on TypeScript 5/6, where `tsc --lsp` does not exist.
+  vtsls = {
+    root_dir = function(bufnr, on_dir)
+      ts_root_dir(bufnr, function(root)
+        if not ts.native_bin(root) then on_dir(root) end
+      end)
+    end,
+  },
+  -- Linters. These run alongside each other: oxlint's own root_dir only
+  -- attaches where the project configures oxlint, and where both are active
+  -- eslint-plugin-oxlint is what suppresses the overlapping rules -- that is a
+  -- project-side concern, not something to paper over here.
+  --
+  -- Fixes are on demand only, via :LspEslintFixAll and :LspOxlintFixAll.
+  eslint = {},
+  oxlint = {},
   html = {},
   cssls = {},
   lua_ls = {
@@ -83,19 +142,19 @@ local servers = {
   },
 }
 
-vim.pack.add {
-  gh 'neovim/nvim-lspconfig',
-  gh 'mason-org/mason.nvim',
-  gh 'mason-org/mason-lspconfig.nvim',
-  gh 'whoissethdaniel/mason-tool-installer.nvim',
-}
-
 require('mason').setup {}
 require('mason-lspconfig').setup {
   automatic_enable = false,
 }
 
-local ensure_installed = vim.tbl_keys(servers or {})
+-- `tsc` comes from the project's node_modules or $PATH, so Mason has nothing
+-- to install for it and would fail to resolve the name.
+local mason_ignore = { tsc = true }
+
+local ensure_installed = {}
+for name in pairs(servers) do
+  if not mason_ignore[name] then ensure_installed[#ensure_installed + 1] = name end
+end
 vim.list_extend(ensure_installed, {})
 
 require('mason-tool-installer').setup { ensure_installed = ensure_installed }
