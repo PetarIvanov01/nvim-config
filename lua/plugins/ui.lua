@@ -21,6 +21,7 @@ require('which-key').setup {
   spec = {
     { '<leader>s', group = '[s]earch', mode = { 'n', 'v' } },
     { '<leader>t', group = '[t]erminal' },
+    { '<leader>u', group = '[u]i' },
     { 'gr', group = 'lsp actions', mode = { 'n' } },
   },
 }
@@ -35,7 +36,8 @@ require('tokyonight').setup {
   },
 }
 
-vim.cmd.colorscheme 'tokyonight-night'
+local theme = require 'config.theme'
+if not pcall(vim.cmd.colorscheme, theme.load()) then vim.cmd.colorscheme(theme.default) end
 vim.api.nvim_set_hl(0, 'terminalnormal', {
   bg = '#11111b',
 })
@@ -164,8 +166,6 @@ local function fix_bufferline_backgrounds()
   end
 end
 
-fix_bufferline_backgrounds()
-
 require('mini.ai').setup {
   -- Avoid conflicts with Neovim's built-in incremental selection mappings.
   mappings = {
@@ -191,17 +191,101 @@ vim.keymap.set('x', 's', 'c', {
 })
 
 local statusline = require 'mini.statusline'
-statusline.setup { use_icons = vim.g.have_nerd_font }
 
 ---@diagnostic disable-next-line: duplicate-set-field
 statusline.section_location = function() return '%2l:%-2v' end
----@diagnostic disable-next-line: duplicate-set-field
-statusline.section_fileinfo = function() return '%y' end
----@diagnostic disable-next-line: duplicate-set-field
-statusline.section_git = function()
-  local branch = vim.b.gitsigns_head
-  if not branch or branch == '' then return '' end
-  return branch
+
+local stl_sep = vim.g.have_nerd_font and '' or '>'
+local stl_dark_fg = '#1a1b26'
+local stl_pos_bg = '#9ece6a'
+local stl_accent = {
+  Normal = '#7aa2f7',
+  Insert = '#bb9af7',
+  Visual = '#7dcfff',
+  Replace = '#ff9e64',
+  Command = '#9ece6a',
+  Other = '#e0af68',
+}
+
+local function set_statusline_highlights()
+  local normal_bg = vim.api.nvim_get_hl(0, { name = 'Normal' }).bg
+  local box_bg = vim.api.nvim_get_hl(0, { name = 'CursorLine' }).bg or normal_bg
+
+  for mode, color in pairs(stl_accent) do
+    vim.api.nvim_set_hl(0, 'MiniStatuslineMode' .. mode, { fg = stl_dark_fg, bg = color, bold = true })
+    vim.api.nvim_set_hl(0, 'StlModeSep' .. mode, { fg = color, bg = box_bg })
+  end
+
+  vim.api.nvim_set_hl(0, 'StlBox', { bg = box_bg, fg = '#c0caf5' })
+  vim.api.nvim_set_hl(0, 'StlBoxSep', { fg = box_bg, bg = normal_bg })
+  vim.api.nvim_set_hl(0, 'StlGit', { fg = '#565f89', bg = normal_bg })
+  vim.api.nvim_set_hl(0, 'StlDiagError', { fg = '#f7768e', bg = normal_bg, bold = true })
+  vim.api.nvim_set_hl(0, 'StlDiagWarn', { fg = '#e0af68', bg = normal_bg, bold = true })
+  vim.api.nvim_set_hl(0, 'StlPos', { fg = stl_dark_fg, bg = stl_pos_bg, bold = true })
+  vim.api.nvim_set_hl(0, 'StlPosSep', { fg = normal_bg, bg = stl_pos_bg })
 end
----@diagnostic disable-next-line: duplicate-set-field
-statusline.section_diff = function() return '' end
+
+-- mini.statusline's diagnostics section renders every severity in one color;
+-- build errors and warnings separately here so they stay red/yellow.
+local function stl_diagnostics()
+  if not vim.diagnostic.is_enabled { bufnr = 0 } then return '' end
+
+  local counts = vim.diagnostic.count(0)
+  local severity = vim.diagnostic.severity
+  local err = counts[severity.ERROR] or 0
+  local warn = counts[severity.WARN] or 0
+  if err == 0 and warn == 0 then return '' end
+
+  local err_icon = vim.g.have_nerd_font and ' ' or 'E'
+  local warn_icon = vim.g.have_nerd_font and ' ' or 'W'
+
+  local parts = {}
+  if err > 0 then table.insert(parts, '%#StlDiagError#' .. err_icon .. err) end
+  if warn > 0 then table.insert(parts, '%#StlDiagWarn#' .. warn_icon .. warn) end
+  return ' ' .. table.concat(parts, '  ') .. ' '
+end
+
+local function build_statusline()
+  local mode, mode_hl = statusline.section_mode { trunc_width = 120 }
+  local mode_sep_hl = (mode_hl or ''):gsub('^MiniStatuslineMode', 'StlModeSep')
+
+  local filename = statusline.section_filename { trunc_width = 140 }
+  local git = statusline.section_git { trunc_width = 40 }
+  local diff = statusline.section_diff { trunc_width = 75 }
+  local location = statusline.section_location { trunc_width = 75 }
+
+  return table.concat {
+    '%#' .. mode_hl .. '# ' .. mode .. ' ',
+    '%#' .. mode_sep_hl .. '#' .. stl_sep,
+    '%#StlBox# ' .. filename .. ' ',
+    '%#StlBoxSep#' .. stl_sep,
+    '%#StlGit# ' .. git .. (diff ~= '' and ' ' .. diff or '') .. ' ',
+    '%<',
+    '%=',
+    stl_diagnostics(),
+    '%=',
+    '%#StlPosSep#' .. stl_sep,
+    '%#StlPos# ' .. location .. ' ',
+  }
+end
+
+statusline.setup {
+  use_icons = vim.g.have_nerd_font,
+  content = { active = build_statusline },
+}
+
+set_statusline_highlights()
+
+-- Re-apply colorscheme-derived highlights whenever the colorscheme changes
+-- (e.g. via the <leader>uc picker), since ':colorscheme' clears all highlights first.
+local function apply_dynamic_highlights()
+  fix_bufferline_backgrounds()
+  set_statusline_highlights()
+end
+
+vim.api.nvim_create_autocmd('ColorScheme', {
+  group = vim.api.nvim_create_augroup('dynamic-ui-highlights', { clear = true }),
+  callback = apply_dynamic_highlights,
+})
+
+apply_dynamic_highlights()
