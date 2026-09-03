@@ -26,12 +26,15 @@ See [CHEATSHEET.md](CHEATSHEET.md) for the command and key reference
 | `lua/config/pack.lua` | `vim.pack` build hooks and GitHub URL helper |
 | `lua/plugins/ui.lua` | Theme, Bufferline, statusline, Gitsigns, Which-key, and Mini |
 | `lua/plugins/telescope.lua` | Search, picker, buffer, and LSP picker mappings |
-| `lua/plugins/lsp.lua` | LSP attachment, servers, and Mason |
-| `lua/plugins/formatting.lua` | Conform and format-on-save |
+| `lua/plugins/lsp.lua` | LSP attachment, servers, Fidget, and Mason |
+| `lua/plugins/formatting.lua` | Conform setup and manual formatting (`<leader>f`) |
 | `lua/plugins/completion.lua` | Blink completion and LuaSnip |
-| `lua/plugins/treesitter.lua` | Parser installation and attachment |
+| `lua/plugins/treesitter.lua` | Parser installation, attachment, and folding |
 | `lua/plugins/neo-tree.lua` | File explorer setup |
+| `lua/config/typescript.lua` | Resolves `tsc` vs `vtsls` per project TypeScript version |
 | `lua/custom/terminal.lua` | Persistent split terminals and floating commands |
+| `lua/custom/plugins/init.lua` | Auto-loads any extra plugin files dropped into `lua/custom/plugins/` |
+| `lua/kickstart/health.lua` | `:checkhealth` support for Neovim version and external tools |
 
 ## Key notation
 
@@ -152,12 +155,15 @@ The LSP mappings below are buffer-local and appear only after a language server 
 
 Configured language servers:
 
-- TypeScript (`ts_ls`)
+- TypeScript: `tsc` (TypeScript 7+'s native `--lsp` server) or `vtsls` (TypeScript 5/6 fallback), chosen per project by `lua/config/typescript.lua`
+- Linting: `eslint` and `oxlint`, run alongside each other; fixes are applied on demand via `:LspEslintFixAll` and `:LspOxlintFixAll`
 - HTML (`html`)
 - CSS (`cssls`)
 - Lua (`lua_ls`)
 
 Use `:Mason` to inspect installed language tooling. Diagnostic jumps use Neovim's normal diagnostic mappings; the configuration opens a rounded diagnostic float after a jump.
+
+Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its `plugin/` script — so `:LspInfo` does not exist. `:LspLog` is redefined in `lua/plugins/lsp.lua` to open the client log at its newest entries.
 
 ## Formatting
 
@@ -165,7 +171,7 @@ Use `:Mason` to inspect installed language tooling. Diagnostic jumps use Neovim'
 | --- | --- | --- |
 | Normal/Visual | `<leader>f` | Format the buffer or selection synchronously with Conform |
 
-Format-on-save is enabled for Lua, JavaScript, JSX, TypeScript, TSX, HTML, CSS, JSON, and JSONC. Lua uses `stylua`; the other configured filetypes use `prettier`. LSP formatting is used as a fallback.
+Formatting is manual: there is no format-on-save, so `<leader>f` is the only way to format. It's configured for Lua, JavaScript, JSX, TypeScript, TSX, HTML, CSS, JSON, and JSONC. Lua uses `stylua`; the other configured filetypes use `prettier`. LSP formatting is used as a fallback.
 
 Use `:ConformInfo` to see the formatter selected for the current buffer and whether its executable is available.
 
