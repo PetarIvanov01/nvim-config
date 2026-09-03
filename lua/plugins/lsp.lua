@@ -70,10 +70,33 @@ vim.pack.add {
 
 local ts = require 'config.typescript'
 
+-- `tsc` (typescript-go's native LSP) has crashed with a nil-pointer panic in
+-- testing and independently with a context-canceled/EOF death in real use --
+-- see project history. Until it proves stable, vtsls is the unconditional
+-- default; flip this to true to make tsc primary again (still gated to
+-- TypeScript 7+ projects, vtsls as its fallback) once that settles.
+local prefer_tsc = false
+
 -- Both TypeScript servers reuse vtsls's project-root logic, which resolves the
 -- nearest package-manager lockfile and declines Deno projects so denols can
 -- take them. Captured before vim.lsp.config() overwrites it below.
 local ts_root_dir = vim.lsp.config.vtsls.root_dir
+
+-- vtsls's inlay-hint and code-lens settings, in its own namespace (`typescript`
+-- and `javascript`, not tsc's `js/ts`). javascript has no enum inlay hints or
+-- implementations code lens -- JS has neither enums nor interfaces.
+local function vtsls_hints(extra)
+  return vim.tbl_deep_extend('force', {
+    inlayHints = {
+      parameterNames = { enabled = 'literals', suppressWhenArgumentMatchesName = true },
+      parameterTypes = { enabled = true },
+      variableTypes = { enabled = true },
+      propertyDeclarationTypes = { enabled = true },
+      functionLikeReturnTypes = { enabled = true },
+    },
+    referencesCodeLens = { enabled = true, showOnAllFunctions = true },
+  }, extra or {})
+end
 
 ---@type table<string, vim.lsp.config>
 local servers = {
@@ -87,18 +110,28 @@ local servers = {
       return vim.lsp.rpc.start({ bin, '--lsp', '--stdio' }, dispatchers)
     end,
     root_dir = function(bufnr, on_dir)
+      if not prefer_tsc then return end
       ts_root_dir(bufnr, function(root)
         if ts.native_bin(root) then on_dir(root) end
       end)
     end,
   },
-  -- Fallback for projects on TypeScript 5/6, where `tsc --lsp` does not exist.
+  -- Default. Also the fallback for TypeScript 5/6 projects when prefer_tsc is
+  -- true, since `tsc --lsp` does not exist there.
   vtsls = {
     root_dir = function(bufnr, on_dir)
       ts_root_dir(bufnr, function(root)
-        if not ts.native_bin(root) then on_dir(root) end
+        if not prefer_tsc or not ts.native_bin(root) then on_dir(root) end
       end)
     end,
+    ---@type lspconfig.settings.vtsls
+    settings = {
+      typescript = vtsls_hints {
+        inlayHints = { enumMemberValues = { enabled = true } },
+        implementationsCodeLens = { enabled = true, showOnAllClassMethods = true, showOnInterfaceMethods = true },
+      },
+      javascript = vtsls_hints(),
+    },
   },
   -- Linters. These run alongside each other: oxlint's own root_dir only
   -- attaches where the project configures oxlint, and where both are active
