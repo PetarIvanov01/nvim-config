@@ -5,20 +5,33 @@ local telescope_plugins = {
   gh 'nvim-lua/plenary.nvim',
   gh 'nvim-telescope/telescope.nvim',
   gh 'nvim-telescope/telescope-ui-select.nvim',
+  gh 'nvim-telescope/telescope-live-grep-args.nvim',
 }
 
 if vim.fn.executable 'make' == 1 then table.insert(telescope_plugins, gh 'nvim-telescope/telescope-fzf-native.nvim') end
 
 vim.pack.add(telescope_plugins)
 
+local lga_actions = require 'telescope-live-grep-args.actions'
+
 require('telescope').setup {
   extensions = {
     ['ui-select'] = { require('telescope.themes').get_dropdown() },
+    live_grep_args = {
+      auto_quoting = true,
+      mappings = {
+        i = {
+          ['<C-k>'] = lga_actions.quote_prompt(),
+          ['<C-i>'] = lga_actions.quote_prompt { postfix = ' --iglob ' },
+        },
+      },
+    },
   },
 }
 
 pcall(require('telescope').load_extension, 'fzf')
 pcall(require('telescope').load_extension, 'ui-select')
+pcall(require('telescope').load_extension, 'live_grep_args')
 
 local builtin = require 'telescope.builtin'
 
@@ -27,7 +40,12 @@ vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[s]earch [k]eymaps'
 vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[s]earch [f]iles' })
 vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[s]earch [s]elect telescope' })
 vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[s]earch current [w]ord' })
-vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[s]earch by [g]rep' })
+vim.keymap.set(
+  'n',
+  '<leader>sg',
+  function() require('telescope').extensions.live_grep_args.live_grep_args() end,
+  { desc = '[s]earch by [g]rep' }
+)
 vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[s]earch [d]iagnostics' })
 vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[s]earch [r]esume' })
 vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[s]earch recent files ("." for repeat)' })
