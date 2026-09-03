@@ -42,8 +42,21 @@ vim.diagnostic.config {
   severity_sort = true,
   float = { border = 'rounded', source = 'if_many' },
   underline = { severity = { min = vim.diagnostic.severity.WARN } },
-  virtual_text = true,
-  virtual_lines = false,
+  -- virtual_text renders inline at end-of-line with no wrapping and no
+  -- affordance to see the rest -- a long TypeScript message (union types
+  -- especially) just runs off the window edge with nothing visibly wrong.
+  -- virtual_lines at least moves it off the code line and onto its own,
+  -- horizontally scrollable one (Neovim's virt_lines default to
+  -- `virt_lines_overflow = 'scroll'`, confirmed in vim/diagnostic.lua) --
+  -- better, but still not wrapped: 'wrap' does not apply to virtual lines
+  -- (see `:h nvim_buf_set_extmark()`). current_line keeps every other
+  -- diagnostic in the buffer as just an underline (still configured above).
+  -- For a guaranteed, fully wrapped read of a long message, use <leader>d
+  -- below -- it opens the same kind of floating window as hover, which
+  -- genuinely soft-wraps by default (vim/lsp/util.lua: `opts.wrap = opts.wrap
+  -- ~= false`).
+  virtual_text = false,
+  virtual_lines = { current_line = true },
   jump = {
     on_jump = function(_, bufnr)
       vim.diagnostic.open_float {
@@ -56,6 +69,9 @@ vim.diagnostic.config {
 }
 
 map('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'open diagnostic [q]uickfix list' })
+map('n', '<leader>d', function()
+  vim.diagnostic.open_float { scope = 'cursor', focus = true }
+end, { desc = 'open [d]iagnostic float (focused, fully wrapped, scrollable)' })
 map('t', '<esc><esc>', '<c-\\><c-n>', { desc = 'exit terminal mode' })
 
 map('n', '<c-h>', '<c-w><c-h>', { desc = 'move focus to the left window' })

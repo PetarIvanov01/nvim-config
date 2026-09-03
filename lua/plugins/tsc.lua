@@ -64,5 +64,10 @@ require('tsc').setup {
 
   -- Left at their defaults deliberately: `flags.watch` and
   -- `auto_start_watch_mode` stay off, so this only ever runs on an explicit
-  -- `:TSC`, never automatically on save or on opening a buffer.
+  -- `:TSC`, never automatically on save or on opening a buffer. Its
+  -- diagnostics are therefore a snapshot from the last run, not live like
+  -- vtsls's -- fix something and save, and vtsls's copy disappears
+  -- immediately while tsc.nvim's sits there stale until :TSC runs again.
+  -- Tried auto-rerunning on save to close that gap; too disruptive in
+  -- practice (a full monorepo check on every write), reverted.
 }
