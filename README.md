@@ -22,7 +22,7 @@ See [CHEATSHEET.md](CHEATSHEET.md) for the command and key reference
 | `lua/config/options.lua` | Leaders, globals, and editor options |
 | `lua/config/shell.lua` | Shared Bash, Command Prompt, and PowerShell profiles |
 | `lua/config/keymaps.lua` | Global mappings and diagnostics |
-| `lua/config/autocmds.lua` | General and terminal highlight autocmds |
+| `lua/config/autocmds.lua` | General autocmds: yank highlight, terminal highlight, trim-trailing-whitespace on save |
 | `lua/config/pack.lua` | `vim.pack` build hooks and GitHub URL helper |
 | `lua/plugins/ui.lua` | Theme, Bufferline, statusline, Gitsigns, Which-key, and Mini |
 | `lua/plugins/telescope.lua` | Search, picker, buffer, and LSP picker mappings |
@@ -174,6 +174,8 @@ Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its `
 Formatting is manual: there is no format-on-save, so `<leader>f` is the only way to format. It's configured for Lua, JavaScript, JSX, TypeScript, TSX, HTML, CSS, JSON, and JSONC. Lua uses `stylua`; the other configured filetypes use `prettier`. LSP formatting is used as a fallback.
 
 Use `:ConformInfo` to see the formatter selected for the current buffer and whether its executable is available.
+
+Trailing whitespace is stripped automatically on every save (`lua/config/autocmds.lua`), independent of Conform. Markdown and diff buffers are excluded, since Markdown uses trailing double-spaces as an intentional hard line break.
 
 ## Completion and snippets
 

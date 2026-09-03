@@ -307,9 +307,11 @@ Standard text objects remain useful: `iw`, `aw`, `i"`, `a"`, `i'`, `i(`, `a(`, `
 | `<leader>f` | Format buffer or Visual selection with Conform |
 | `:ConformInfo` | Show formatter status for current buffer |
 
-Formatting is manual: there is no format-on-save, so `<leader>f` is the only way to format.
+Formatting is manual: there is no format-on-save, so `<leader>f` is the only way to run Conform.
 
 Lua uses StyLua. JavaScript, JSX, TypeScript, TSX, HTML, CSS, JSON, and JSONC use Prettier. LSP formatting is the fallback.
+
+Trailing whitespace is trimmed automatically on every save, independent of Conform — except in Markdown and diff buffers, where trailing double-spaces are a hard line break.
 
 ## Folding
 
