@@ -18,7 +18,7 @@ vim.api.nvim_create_user_command('LspLog', function()
   vim.cmd 'normal! G'
 end, { desc = 'open the LSP client log' })
 
-vim.api.nvim_create_autocmd('lspattach', {
+vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
   callback = function(event)
     local map = function(keys, func, desc, mode)
@@ -26,27 +26,30 @@ vim.api.nvim_create_autocmd('lspattach', {
       vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'lsp: ' .. desc })
     end
 
-    map('grn', vim.lsp.buf.rename, '[r]e[n]ame')
-    map('gra', vim.lsp.buf.code_action, '[g]oto code [a]ction', { 'n', 'x' })
+    -- `grn`, `gra`, `grr`, `gri`, `grt` and `grx` are Neovim defaults since
+    -- 0.11 (confirmed with `:verbose nmap gr` on 0.12.4), so they are not
+    -- redefined here. `grr`/`gri`/`grt`/`grd` *are* overridden buffer-locally
+    -- in plugins/telescope.lua, to swap the default quickfix list for a
+    -- Telescope picker. `grD` has no Neovim default, so it is mapped here.
     map('grD', vim.lsp.buf.declaration, '[g]oto [d]eclaration')
 
     local client = vim.lsp.get_client_by_id(event.data.client_id)
     if client and client:supports_method('textDocument/documentHighlight', event.buf) then
       local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
 
-      vim.api.nvim_create_autocmd({ 'cursorhold', 'cursorholdi' }, {
+      vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
         buffer = event.buf,
         group = highlight_augroup,
         callback = vim.lsp.buf.document_highlight,
       })
 
-      vim.api.nvim_create_autocmd({ 'cursormoved', 'cursormovedi' }, {
+      vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
         buffer = event.buf,
         group = highlight_augroup,
         callback = vim.lsp.buf.clear_references,
       })
 
-      vim.api.nvim_create_autocmd('lspdetach', {
+      vim.api.nvim_create_autocmd('LspDetach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
         callback = function(event2)
           vim.lsp.buf.clear_references()
@@ -57,6 +60,21 @@ vim.api.nvim_create_autocmd('lspattach', {
 
     if client and client:supports_method('textDocument/inlayHint', event.buf) then
       map('<leader>th', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }) end, '[t]oggle inlay [h]ints')
+    end
+
+    -- Code lens is off by default in Neovim (`vim.lsp.codelens.is_enabled()`
+    -- returns false on a stock 0.12.4), so the `referencesCodeLens` /
+    -- `implementationsCodeLens` settings requested from vtsls below were being
+    -- computed by the server and then never rendered. Turn it on where the
+    -- server actually provides it; `grx` (a Neovim default) runs the lens under
+    -- the cursor. Remove this block to go back to no lenses.
+    if client and client:supports_method('textDocument/codeLens', event.buf) then
+      vim.lsp.codelens.enable(true, { bufnr = event.buf })
+      map(
+        '<leader>tl',
+        function() vim.lsp.codelens.enable(not vim.lsp.codelens.is_enabled { bufnr = event.buf }, { bufnr = event.buf }) end,
+        '[t]oggle code [l]ens'
+      )
     end
   end,
 })
@@ -122,14 +140,22 @@ local servers = {
         if path ~= vim.fn.stdpath 'config' and (vim.uv.fs_stat(path .. '/.luarc.json') or vim.uv.fs_stat(path .. '/.luarc.jsonc')) then return end
       end
 
+      -- These keys are case-sensitive on the server side, unlike Vim option and
+      -- autocmd names: lua-language-server flattens the settings table into
+      -- dotted keys and looks each one up verbatim in its config template
+      -- (script/config/config.lua, `expand()` -> `template[fullKey]`), silently
+      -- dropping anything that does not match. A lowercase `lua` key made every
+      -- setting below a no-op -- most visibly `workspace.library`, without which
+      -- editing this config gets no Neovim API completion and an undefined-global
+      -- `vim` warning. Must be `Lua`, `checkThirdParty`, `LuaJIT`.
       local current_settings = client.config.settings --[[@as lspconfig.settings.lua_ls]]
-      client.config.settings.lua = vim.tbl_deep_extend('force', current_settings.lua, {
+      client.config.settings.Lua = vim.tbl_deep_extend('force', current_settings.Lua, {
         runtime = {
-          version = 'luajit',
+          version = 'LuaJIT',
           path = { 'lua/?.lua', 'lua/?/init.lua' },
         },
         workspace = {
-          checkthirdparty = false,
+          checkThirdParty = false,
           -- Runtime files are needed when editing the Neovim configuration itself.
           library = vim.api.nvim_get_runtime_file('', true),
         },
@@ -137,7 +163,7 @@ local servers = {
     end,
     ---@type lspconfig.settings.lua_ls
     settings = {
-      lua = {
+      Lua = {
         format = { enable = false },
       },
     },
@@ -149,8 +175,9 @@ require('mason-lspconfig').setup {
   automatic_enable = false,
 }
 
+-- Only the language servers above. Formatters (stylua, prettier) are expected
+-- on PATH or in the project, not installed by Mason -- see :checkhealth kickstart.
 local ensure_installed = vim.tbl_keys(servers or {})
-vim.list_extend(ensure_installed, {})
 
 require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 

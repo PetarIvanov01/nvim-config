@@ -11,7 +11,7 @@ local function run_build(name, cmd, cwd)
   end
 end
 
-vim.api.nvim_create_autocmd('packchanged', {
+vim.api.nvim_create_autocmd('PackChanged', {
   callback = function(ev)
     local name = ev.data.spec.name
     local kind = ev.data.kind

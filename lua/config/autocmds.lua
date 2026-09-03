@@ -1,10 +1,10 @@
-vim.api.nvim_create_autocmd('textyankpost', {
+vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'highlight when yanking (copying) text',
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
   callback = function() vim.hl.on_yank() end,
 })
 
-vim.api.nvim_create_autocmd('termopen', {
+vim.api.nvim_create_autocmd('TermOpen', {
   desc = 'use custom terminal background',
   group = vim.api.nvim_create_augroup('custom-terminal-highlight', { clear = true }),
   callback = function()
@@ -20,7 +20,7 @@ vim.api.nvim_create_autocmd('termopen', {
 -- Markdown uses trailing double-spaces as an intentional hard line break.
 local trim_whitespace_excluded_filetypes = { markdown = true, diff = true }
 
-vim.api.nvim_create_autocmd('bufwritepre', {
+vim.api.nvim_create_autocmd('BufWritePre', {
   desc = 'trim trailing whitespace',
   group = vim.api.nvim_create_augroup('trim-trailing-whitespace', { clear = true }),
   callback = function(ev)

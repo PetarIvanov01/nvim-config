@@ -52,7 +52,7 @@ vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[s]earch recent fi
 vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[s]earch [c]ommands' })
 vim.keymap.set('n', '<leader><leader>', require('telescope.builtin').find_files, { desc = '[ ] find files' })
 
-vim.api.nvim_create_autocmd('lspattach', {
+vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('telescope-lsp-attach', { clear = true }),
   callback = function(event)
     local buf = event.buf
