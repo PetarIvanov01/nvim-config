@@ -68,37 +68,39 @@ vim.pack.add {
   gh 'whoissethdaniel/mason-tool-installer.nvim',
 }
 
-local ts = require 'config.typescript'
-
--- Both TypeScript servers reuse vtsls's project-root logic, which resolves the
--- nearest package-manager lockfile and declines Deno projects so denols can
--- take them. Captured before vim.lsp.config() overwrites it below.
-local ts_root_dir = vim.lsp.config.vtsls.root_dir
+-- vtsls's inlay-hint and code-lens settings, in its own namespace (`typescript`
+-- and `javascript`, not tsc's `js/ts`). javascript has no enum inlay hints or
+-- implementations code lens -- JS has neither enums nor interfaces.
+local function vtsls_hints(extra)
+  return vim.tbl_deep_extend('force', {
+    inlayHints = {
+      parameterNames = { enabled = 'literals', suppressWhenArgumentMatchesName = true },
+      parameterTypes = { enabled = true },
+      variableTypes = { enabled = true },
+      propertyDeclarationTypes = { enabled = true },
+      functionLikeReturnTypes = { enabled = true },
+    },
+    referencesCodeLens = { enabled = true, showOnAllFunctions = true },
+  }, extra or {})
+end
 
 ---@type table<string, vim.lsp.config>
 local servers = {
-  -- TypeScript 7+. Overrides upstream's cmd/root_dir so the binary chosen by
-  -- the version probe is the one actually launched; upstream's inlay-hint and
-  -- code-lens settings still merge in underneath.
-  tsc = {
-    cmd = function(dispatchers, config)
-      local root = (config or {}).root_dir or vim.fn.getcwd()
-      local bin = ts.native_bin(root) or 'tsc'
-      return vim.lsp.rpc.start({ bin, '--lsp', '--stdio' }, dispatchers)
-    end,
-    root_dir = function(bufnr, on_dir)
-      ts_root_dir(bufnr, function(root)
-        if ts.native_bin(root) then on_dir(root) end
-      end)
-    end,
-  },
-  -- Fallback for projects on TypeScript 5/6, where `tsc --lsp` does not exist.
+  -- The TypeScript/JavaScript server for every project, regardless of the
+  -- project's own TypeScript version. `tsc` (typescript-go's native `--lsp`
+  -- server) was tried here and dropped after it crashed independently in
+  -- testing (a nil-pointer panic) and in real use (a recurring
+  -- context-canceled/EOF death) -- see commit f5e9eb3 to revive it if that
+  -- ever proves stable.
   vtsls = {
-    root_dir = function(bufnr, on_dir)
-      ts_root_dir(bufnr, function(root)
-        if not ts.native_bin(root) then on_dir(root) end
-      end)
-    end,
+    ---@type lspconfig.settings.vtsls
+    settings = {
+      typescript = vtsls_hints {
+        inlayHints = { enumMemberValues = { enabled = true } },
+        implementationsCodeLens = { enabled = true, showOnAllClassMethods = true, showOnInterfaceMethods = true },
+      },
+      javascript = vtsls_hints(),
+    },
   },
   -- Linters. These run alongside each other: oxlint's own root_dir only
   -- attaches where the project configures oxlint, and where both are active
@@ -147,14 +149,7 @@ require('mason-lspconfig').setup {
   automatic_enable = false,
 }
 
--- `tsc` comes from the project's node_modules or $PATH, so Mason has nothing
--- to install for it and would fail to resolve the name.
-local mason_ignore = { tsc = true }
-
-local ensure_installed = {}
-for name in pairs(servers) do
-  if not mason_ignore[name] then ensure_installed[#ensure_installed + 1] = name end
-end
+local ensure_installed = vim.tbl_keys(servers or {})
 vim.list_extend(ensure_installed, {})
 
 require('mason-tool-installer').setup { ensure_installed = ensure_installed }

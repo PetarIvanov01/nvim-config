@@ -27,11 +27,11 @@ See [CHEATSHEET.md](CHEATSHEET.md) for the command and key reference
 | `lua/plugins/ui.lua` | Theme, Bufferline, statusline, Gitsigns, Which-key, and Mini |
 | `lua/plugins/telescope.lua` | Search, picker, buffer, and LSP picker mappings |
 | `lua/plugins/lsp.lua` | LSP attachment, servers, Fidget, and Mason |
+| `lua/plugins/tsc.lua` | tsc.nvim: on-demand type-checking with the project's real `tsc` (`:TSC`) |
 | `lua/plugins/formatting.lua` | Conform setup and manual formatting (`<leader>f`) |
 | `lua/plugins/completion.lua` | Blink completion and LuaSnip |
 | `lua/plugins/treesitter.lua` | Parser installation, attachment, and folding |
 | `lua/plugins/neo-tree.lua` | File explorer setup |
-| `lua/config/typescript.lua` | Resolves `tsc` vs `vtsls` per project TypeScript version |
 | `lua/custom/terminal.lua` | Persistent split terminals and floating commands |
 | `lua/custom/plugins/init.lua` | Auto-loads any extra plugin files dropped into `lua/custom/plugins/` |
 | `lua/kickstart/health.lua` | `:checkhealth` support for Neovim version and external tools |
@@ -142,6 +142,7 @@ The LSP mappings below are buffer-local and appear only after a language server 
 | Mode | Key | Action |
 | --- | --- | --- |
 | Normal | `<leader>q` | Put diagnostics into the location list |
+| Normal | `<leader>d` | Open a focused diagnostic float for the current line |
 | Normal | `grn` | Rename the symbol under the cursor |
 | Normal/Visual | `gra` | Request a code action |
 | Normal | `grr` | Find references with Telescope |
@@ -155,7 +156,7 @@ The LSP mappings below are buffer-local and appear only after a language server 
 
 Configured language servers:
 
-- TypeScript: `tsc` (TypeScript 7+'s native `--lsp` server) or `vtsls` (TypeScript 5/6 fallback), chosen per project by `lua/config/typescript.lua`
+- TypeScript: `vtsls`, for every project regardless of its own TypeScript version. `tsc` (TypeScript 7+'s native `--lsp` server) was tried and removed after it crashed independently in testing and in real use — see commit `f5e9eb3` to revive the per-project version gate if that ever proves stable.
 - Linting: `eslint` and `oxlint`, run alongside each other; fixes are applied on demand via `:LspEslintFixAll` and `:LspOxlintFixAll`
 - HTML (`html`)
 - CSS (`cssls`)
@@ -163,7 +164,11 @@ Configured language servers:
 
 Use `:Mason` to inspect installed language tooling. Diagnostic jumps use Neovim's normal diagnostic mappings; the configuration opens a rounded diagnostic float after a jump.
 
+A long diagnostic message (a TypeScript union type, especially) can run off the edge of the window: inline diagnostics (`virtual_lines`, scoped to the current line only — other lines just get an underline) don't wrap, by design — `'wrap'` does not apply to virtual lines (`:h nvim_buf_set_extmark()`). `<leader>d` is the reliable way to read one in full: it opens the same kind of floating window as hover, which does wrap. Press it once to see the float, press it again to move the cursor inside — from there it's a normal (read-only) buffer, so `y`/visual-select copies out of it normally.
+
 Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its `plugin/` script — so `:LspInfo` does not exist. `:LspLog` is redefined in `lua/plugins/lsp.lua` to open the client log at its newest entries.
+
+`vtsls` always type-checks against its own bundled TypeScript, never the project's own pinned version — TypeScript 7's package no longer ships `tsserver.js` at all, so there's no setting that changes this. `lua/plugins/tsc.lua` ([tsc.nvim](https://github.com/dmmulroy/tsc.nvim)) closes that gap on demand: `:TSC` runs the project's real, pinned `tsc --noEmit` across every `tsconfig.json` in the tree and reports results as both quickfix entries and normal diagnostics. It never runs automatically — only on `:TSC`; `:TSCStop` cancels a run in progress.
 
 ## Formatting
 

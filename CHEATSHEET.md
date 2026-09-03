@@ -224,6 +224,7 @@ These mappings appear only when a language server attaches to the buffer.
 | Insert `<C-k>` | Show function signature and highlight the current argument |
 | `[d` / `]d` | Previous / next diagnostic |
 | `<leader>q` | Put diagnostics into location list |
+| `<leader>d` | Open a focused, fully wrapped diagnostic float for the current line -- press twice to move the cursor in and copy out of it |
 | `:lopen` / `:lclose` | Open / close location list |
 | `:lnext` / `:lprevious` | Next / previous location-list item |
 | `:Mason` | Inspect and manage language tools |
@@ -231,12 +232,18 @@ These mappings appear only when a language server attaches to the buffer.
 | `:lsp restart` / `:lsp stop` | Restart / stop the clients attached to this buffer |
 | `:lsp enable {name}` / `:lsp disable {name}` | Turn one server on / off |
 | `:LspLog` | Open the LSP client log at its newest entries |
+| `:TSC` | Type-check with the project's real, pinned `tsc` (not vtsls's bundled version) |
+| `:TSCStop` | Cancel a running `:TSC` |
 
-Configured servers: `tsc` and `vtsls` for TypeScript, `eslint` and `oxlint` for linting, plus `html`, `cssls`, and `lua_ls`.
+Configured servers: `vtsls` for TypeScript (every project, regardless of its TypeScript version), `eslint` and `oxlint` for linting, plus `html`, `cssls`, and `lua_ls`. `tsc` (TypeScript 7+'s native `--lsp` server) was tried and removed after repeated crashes — see commit `f5e9eb3` to revive the per-project version gate if that ever proves stable.
 
 Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its
 whole `plugin/` script — so `:LspInfo`, `:LspEslintFixAll`, and
 `:LspOxlintFixAll` do not exist. `:LspLog` is redefined in `lua/plugins/lsp.lua`.
+
+`vtsls` only ever type-checks with its own bundled TypeScript, never the project's pinned version — `:TSC` ([tsc.nvim](https://github.com/dmmulroy/tsc.nvim)) runs the real compiler instead, on demand only.
+
+Inline diagnostics (`virtual_lines`, current line only) don't wrap a long message, by design -- they scroll instead (`'wrap'` does not apply to virtual lines). `<leader>d` opens the same kind of floating window as `K`/hover, which does wrap, so it's the reliable way to read a long TypeScript error in full.
 
 ## Quickfix list
 
