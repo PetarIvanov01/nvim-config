@@ -142,6 +142,7 @@ The LSP mappings below are buffer-local and appear only after a language server 
 | Mode | Key | Action |
 | --- | --- | --- |
 | Normal | `<leader>q` | Put diagnostics into the location list |
+| Normal | `<leader>d` | Open a focused diagnostic float for the current line |
 | Normal | `grn` | Rename the symbol under the cursor |
 | Normal/Visual | `gra` | Request a code action |
 | Normal | `grr` | Find references with Telescope |
@@ -162,6 +163,8 @@ Configured language servers:
 - Lua (`lua_ls`)
 
 Use `:Mason` to inspect installed language tooling. Diagnostic jumps use Neovim's normal diagnostic mappings; the configuration opens a rounded diagnostic float after a jump.
+
+A long diagnostic message (a TypeScript union type, especially) can run off the edge of the window: inline diagnostics (`virtual_lines`, scoped to the current line only — other lines just get an underline) don't wrap, by design — `'wrap'` does not apply to virtual lines (`:h nvim_buf_set_extmark()`). `<leader>d` is the reliable way to read one in full: it opens the same kind of floating window as hover, which does wrap. Press it once to see the float, press it again to move the cursor inside — from there it's a normal (read-only) buffer, so `y`/visual-select copies out of it normally.
 
 Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its `plugin/` script — so `:LspInfo` does not exist. `:LspLog` is redefined in `lua/plugins/lsp.lua` to open the client log at its newest entries.
 

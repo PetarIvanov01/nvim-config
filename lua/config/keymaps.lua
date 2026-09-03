@@ -70,7 +70,12 @@ vim.diagnostic.config {
 
 map('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'open diagnostic [q]uickfix list' })
 map('n', '<leader>d', function()
-  vim.diagnostic.open_float { scope = 'cursor', focus = true }
+  -- scope = 'cursor' requires the cursor column to sit exactly within the
+  -- diagnostic's flagged range -- anywhere else on the same line and it
+  -- silently opens nothing, indistinguishable from the mapping not working
+  -- (confirmed directly). scope = 'line' opens for any diagnostic on the
+  -- current line regardless of column.
+  vim.diagnostic.open_float { scope = 'line', focus = true }
 end, { desc = 'open [d]iagnostic float (focused, fully wrapped, scrollable)' })
 map('t', '<esc><esc>', '<c-\\><c-n>', { desc = 'exit terminal mode' })
 

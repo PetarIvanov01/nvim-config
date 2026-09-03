@@ -224,6 +224,7 @@ These mappings appear only when a language server attaches to the buffer.
 | Insert `<C-k>` | Show function signature and highlight the current argument |
 | `[d` / `]d` | Previous / next diagnostic |
 | `<leader>q` | Put diagnostics into location list |
+| `<leader>d` | Open a focused, fully wrapped diagnostic float for the current line -- press twice to move the cursor in and copy out of it |
 | `:lopen` / `:lclose` | Open / close location list |
 | `:lnext` / `:lprevious` | Next / previous location-list item |
 | `:Mason` | Inspect and manage language tools |
@@ -241,6 +242,8 @@ whole `plugin/` script — so `:LspInfo`, `:LspEslintFixAll`, and
 `:LspOxlintFixAll` do not exist. `:LspLog` is redefined in `lua/plugins/lsp.lua`.
 
 `vtsls` only ever type-checks with its own bundled TypeScript, never the project's pinned version — `:TSC` ([tsc.nvim](https://github.com/dmmulroy/tsc.nvim)) runs the real compiler instead, on demand only.
+
+Inline diagnostics (`virtual_lines`, current line only) don't wrap a long message, by design -- they scroll instead (`'wrap'` does not apply to virtual lines). `<leader>d` opens the same kind of floating window as `K`/hover, which does wrap, so it's the reliable way to read a long TypeScript error in full.
 
 ## Quickfix list
 
