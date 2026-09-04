@@ -102,6 +102,43 @@ local function vtsls_hints(extra)
   }, extra or {})
 end
 
+-- lspconfig prefers a project-local server binary over the Mason/PATH one by
+-- joining `<root_dir>/node_modules/.bin/<name>` -- but on Windows that
+-- extensionless path is npm's *POSIX shell script* shim, which CreateProcess
+-- cannot run. `executable()` still answers 1 for it (it is a file that exists,
+-- and for a full path Vim does not require a PATHEXT extension), so lspconfig
+-- picks it and the spawn dies with "Spawning language server with cmd: { ... }
+-- failed. The language server is either not installed, missing from PATH, or
+-- not executable." The runnable sibling shim is `<name>.cmd`, so try that
+-- first. Every server lspconfig resolves this way needs it -- oxlint, eslint,
+-- html and cssls below all do. Off Windows the loop collapses to lspconfig's
+-- own behaviour, so no `is_win` guard is needed.
+--
+-- The binary names are repeated from lspconfig's own `lsp/<name>.lua`; if a
+-- server stops starting after an lspconfig update, check its `cmd` there first.
+local function node_bin_cmd(name, ...)
+  local args = { ... }
+  -- The bare name is deliberately *not* a Windows candidate: it is the broken
+  -- shim, and falling through to Mason/PATH beats failing to spawn at all.
+  local candidates = vim.fn.has 'win32' == 1 and { name .. '.cmd', name .. '.exe' } or { name }
+
+  return function(dispatchers, config)
+    local cmd = name
+
+    if (config or {}).root_dir then
+      for _, candidate in ipairs(candidates) do
+        local local_cmd = vim.fs.joinpath(config.root_dir, 'node_modules/.bin', candidate)
+        if vim.fn.executable(local_cmd) == 1 then
+          cmd = local_cmd
+          break
+        end
+      end
+    end
+
+    return vim.lsp.rpc.start(vim.list_extend({ cmd }, args), dispatchers)
+  end
+end
+
 ---@type table<string, vim.lsp.config>
 local servers = {
   -- The TypeScript/JavaScript server for every project, regardless of the
@@ -126,10 +163,10 @@ local servers = {
   -- project-side concern, not something to paper over here.
   --
   -- Fixes are on demand only, via :LspEslintFixAll and :LspOxlintFixAll.
-  eslint = {},
-  oxlint = {},
-  html = {},
-  cssls = {},
+  eslint = { cmd = node_bin_cmd('vscode-eslint-language-server', '--stdio') },
+  oxlint = { cmd = node_bin_cmd('oxlint', '--lsp') },
+  html = { cmd = node_bin_cmd('vscode-html-language-server', '--stdio') },
+  cssls = { cmd = node_bin_cmd('vscode-css-language-server', '--stdio') },
   lua_ls = {
     on_init = function(client)
       -- Formatting is handled by Conform and StyLua.

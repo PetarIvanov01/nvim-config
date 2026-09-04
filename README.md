@@ -196,6 +196,8 @@ A long diagnostic message (a TypeScript union type, especially) can run off the 
 
 Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its `plugin/` script — so `:LspInfo` and `:LspStart`/`:LspStop`/`:LspRestart` do not exist (`:lsp` and `:checkhealth vim.lsp` replace them). `:LspLog` is redefined in `lua/plugins/lsp.lua` to open the client log at its newest entries. `:LspEslintFixAll` and `:LspOxlintFixAll` are unaffected — those are buffer-local commands created from each server's `on_attach`, not from the skipped `plugin/` script.
 
+`eslint`, `oxlint`, `html`, and `cssls` get their `cmd` from `node_bin_cmd` in `lua/plugins/lsp.lua` instead of taking nvim-lspconfig's default. Upstream prefers a project-local server by joining `<root>/node_modules/.bin/<name>`, which on Windows is npm's POSIX shell-script shim — `executable()` reports it as runnable, then the spawn fails with "The language server is either not installed, missing from PATH, or not executable." `node_bin_cmd` looks for the `.cmd` (then `.exe`) shim npm writes alongside it and falls back to Mason/PATH if neither exists. Off Windows it resolves exactly as upstream does.
+
 `vtsls` always type-checks against its own bundled TypeScript, never the project's own pinned version — TypeScript 7's package no longer ships `tsserver.js` at all, so there's no setting that changes this. `lua/plugins/tsc.lua` ([tsc.nvim](https://github.com/dmmulroy/tsc.nvim)) closes that gap on demand: `:TSC` runs the project's real, pinned `tsc --noEmit` across every `tsconfig.json` in the tree and reports results as both quickfix entries and normal diagnostics. It never runs automatically — only on `:TSC`; `:TSCStop` cancels a run in progress.
 
 ## Formatting
