@@ -167,6 +167,16 @@ local servers = {
   oxlint = { cmd = node_bin_cmd('oxlint', '--lsp') },
   html = { cmd = node_bin_cmd('vscode-html-language-server', '--stdio') },
   cssls = { cmd = node_bin_cmd('vscode-css-language-server', '--stdio') },
+  -- Odin. Its `cmd` is left at nvim-lspconfig's default (a bare `ols`): the
+  -- Mason package writes a real `ols.cmd` shim, which libuv resolves through
+  -- PATHEXT, so this needs none of the `node_bin_cmd` handling above.
+  --
+  -- ols reads per-project settings from an `ols.json` at the workspace root
+  -- (extra collections, `checker_args`, `odin_command`); `init_options` here
+  -- would apply to every Odin project at once, so it is deliberately empty.
+  -- ols does depend on the `odin` compiler being on PATH for its checker --
+  -- see `:checkhealth kickstart`.
+  ols = {},
   lua_ls = {
     on_init = function(client)
       -- Formatting is handled by Conform and StyLua.
@@ -214,6 +224,8 @@ require('mason-lspconfig').setup {
 
 -- Only the language servers above. Formatters (stylua, prettier) are expected
 -- on PATH or in the project, not installed by Mason -- see :checkhealth kickstart.
+-- `odinfmt` is the one exception, and not by choice: Mason's `ols` package ships
+-- both binaries, so installing the server installs the formatter with it.
 local ensure_installed = vim.tbl_keys(servers or {})
 
 require('mason-tool-installer').setup { ensure_installed = ensure_installed }
