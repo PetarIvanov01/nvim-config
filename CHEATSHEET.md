@@ -233,7 +233,10 @@ These mappings appear only when a language server attaches to the buffer.
 | `grn` | Rename symbol |
 | `gra` | Request code action (Normal or Visual mode) |
 | `go` / `gw` | Search document / workspace symbols |
+| `grx` | Run the code lens under the cursor (Neovim default) |
 | `<leader>th` | Toggle inlay hints when supported |
+| `<leader>tl` | Toggle code lens for the current buffer |
+| `:LspEslintFixAll` / `:LspOxlintFixAll` | Apply all lint fixes in the buffer |
 | Insert `<C-k>` | Show function signature and highlight the current argument |
 | `[d` / `]d` | Previous / next diagnostic |
 | `<leader>q` | Put diagnostics into location list |
@@ -251,8 +254,13 @@ These mappings appear only when a language server attaches to the buffer.
 Configured servers: `vtsls` for TypeScript (every project, regardless of its TypeScript version), `eslint` and `oxlint` for linting, plus `html`, `cssls`, and `lua_ls`. `tsc` (TypeScript 7+'s native `--lsp` server) was tried and removed after repeated crashes — see commit `f5e9eb3` to revive the per-project version gate if that ever proves stable.
 
 Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its
-whole `plugin/` script — so `:LspInfo`, `:LspEslintFixAll`, and
-`:LspOxlintFixAll` do not exist. `:LspLog` is redefined in `lua/plugins/lsp.lua`.
+whole `plugin/` script — so `:LspInfo` and `:LspStart`/`:LspStop`/`:LspRestart`
+do not exist; use `:lsp` and `:checkhealth vim.lsp` instead. `:LspLog` is
+redefined in `lua/plugins/lsp.lua`. `:LspEslintFixAll` and `:LspOxlintFixAll`
+**do** exist: nvim-lspconfig creates them as buffer-local commands from those
+servers' `on_attach` (`lsp/eslint.lua`, `lsp/oxlint.lua`), which the skipped
+`plugin/` script has nothing to do with — so they appear in any buffer those
+servers attach to.
 
 `vtsls` only ever type-checks with its own bundled TypeScript, never the project's pinned version — `:TSC` ([tsc.nvim](https://github.com/dmmulroy/tsc.nvim)) runs the real compiler instead, on demand only.
 

@@ -5,10 +5,12 @@ nvim
 
 spell/
 
-# In your personal fork, you likely want to comment this, since it's recommended to track
-# nvim-pack-lock.json in version control - see :help vim.pack-lockfile
-# For the official `nvim-lua/kickstart.nvim` git repository, we leave it ignored to avoid unneeded
-# merge conflicts.
-nvim-pack-lock.json
+# nvim-pack-lock.json is deliberately NOT ignored here. Upstream kickstart.nvim
+# ignores it to avoid merge conflicts on a template repo; this is a personal
+# config, where pinning exact plugin commits across machines is the point.
+# See :help vim.pack-lockfile
+
+# Stray runtime logs (nvim.log was committed by accident once).
+*.log
 
 .DS_Store

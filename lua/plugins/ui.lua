@@ -19,8 +19,10 @@ require('which-key').setup {
   delay = 0,
   icons = { mappings = vim.g.have_nerd_font },
   spec = {
+    { '<leader>b', group = '[b]uffer' },
+    { '<leader>g', group = '[g]it' },
     { '<leader>s', group = '[s]earch', mode = { 'n', 'v' } },
-    { '<leader>t', group = '[t]erminal' },
+    { '<leader>t', group = '[t]oggle/[t]erminal' },
     { '<leader>u', group = '[u]i' },
     { 'gr', group = 'lsp actions', mode = { 'n' } },
   },

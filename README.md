@@ -13,6 +13,11 @@ See [CHEATSHEET.md](CHEATSHEET.md) for the command and key reference
 - `stylua` and `prettier` on `PATH` for configured formatting
 - Git for Windows, for Git Bash and custom terminals — `bash.exe` is auto-detected from `git` on `PATH` or the standard Git for Windows install locations (see `lua/config/shell.lua`)
 - Optional: `make` for Telescope's native FZF extension and supported plugin build hooks
+- Node.js, for `vtsls`, `eslint`, `oxlint`, and `:TSC`
+
+Run `:checkhealth kickstart` to verify all of the above at once — each optional tool it reports names the single feature that stops working without it.
+
+`nvim-pack-lock.json` is tracked in this repository so plugin commits are pinned across machines (`:help vim.pack-lockfile`).
 
 ## Configuration layout
 
@@ -34,7 +39,7 @@ See [CHEATSHEET.md](CHEATSHEET.md) for the command and key reference
 | `lua/plugins/neo-tree.lua` | File explorer setup |
 | `lua/custom/terminal.lua` | Persistent split terminals and floating commands |
 | `lua/custom/plugins/init.lua` | Auto-loads any extra plugin files dropped into `lua/custom/plugins/` |
-| `lua/kickstart/health.lua` | `:checkhealth` support for Neovim version and external tools |
+| `lua/kickstart/health.lua` | `:checkhealth kickstart` — Neovim version, required/optional external tools, and shell-profile resolution |
 
 ## Key notation
 
@@ -169,7 +174,13 @@ The LSP mappings below are buffer-local and appear only after a language server 
 | Normal | `grt` | Find type definitions with Telescope |
 | Normal | `go` | Search document symbols |
 | Normal | `gw` | Search workspace symbols |
+| Normal | `grx` | Run the code lens under the cursor |
 | Normal | `<leader>th` | Toggle inlay hints when the server-support check succeeds |
+| Normal | `<leader>tl` | Toggle code lens for the current buffer |
+
+`grn`, `gra`, `grr`, `gri`, `grt`, and `grx` are Neovim defaults (0.11+), not defined by this config. `grr`, `gri`, `grt`, and `grd` are re-mapped buffer-locally in `lua/plugins/telescope.lua` so results land in a Telescope picker instead of the quickfix list; `grD` is added in `lua/plugins/lsp.lua` because Neovim has no default for it.
+
+Code lens is enabled on attach for servers that support it (`lua/plugins/lsp.lua`) — Neovim keeps it off by default, so the `referencesCodeLens` and `implementationsCodeLens` settings requested from `vtsls` would otherwise never render. `<leader>tl` turns it off per buffer.
 
 Configured language servers:
 
@@ -183,7 +194,9 @@ Use `:Mason` to inspect installed language tooling. Diagnostic jumps use Neovim'
 
 A long diagnostic message (a TypeScript union type, especially) can run off the edge of the window: inline diagnostics (`virtual_lines`, scoped to the current line only — other lines just get an underline) don't wrap, by design — `'wrap'` does not apply to virtual lines (`:h nvim_buf_set_extmark()`). `<leader>d` is the reliable way to read one in full: it opens the same kind of floating window as hover, which does wrap. Press it once to see the float, press it again to move the cursor inside — from there it's a normal (read-only) buffer, so `y`/visual-select copies out of it normally.
 
-Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its `plugin/` script — so `:LspInfo` does not exist. `:LspLog` is redefined in `lua/plugins/lsp.lua` to open the client log at its newest entries.
+Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its `plugin/` script — so `:LspInfo` and `:LspStart`/`:LspStop`/`:LspRestart` do not exist (`:lsp` and `:checkhealth vim.lsp` replace them). `:LspLog` is redefined in `lua/plugins/lsp.lua` to open the client log at its newest entries. `:LspEslintFixAll` and `:LspOxlintFixAll` are unaffected — those are buffer-local commands created from each server's `on_attach`, not from the skipped `plugin/` script.
+
+`eslint`, `oxlint`, `html`, and `cssls` get their `cmd` from `node_bin_cmd` in `lua/plugins/lsp.lua` instead of taking nvim-lspconfig's default. Upstream prefers a project-local server by joining `<root>/node_modules/.bin/<name>`, which on Windows is npm's POSIX shell-script shim — `executable()` reports it as runnable, then the spawn fails with "The language server is either not installed, missing from PATH, or not executable." `node_bin_cmd` looks for the `.cmd` (then `.exe`) shim npm writes alongside it and falls back to Mason/PATH if neither exists. Off Windows it resolves exactly as upstream does.
 
 `vtsls` always type-checks against its own bundled TypeScript, never the project's own pinned version — TypeScript 7's package no longer ships `tsserver.js` at all, so there's no setting that changes this. `lua/plugins/tsc.lua` ([tsc.nvim](https://github.com/dmmulroy/tsc.nvim)) closes that gap on demand: `:TSC` runs the project's real, pinned `tsc --noEmit` across every `tsconfig.json` in the tree and reports results as both quickfix entries and normal diagnostics. It never runs automatically — only on `:TSC`; `:TSCStop` cancels a run in progress.
 
@@ -270,6 +283,7 @@ Managed terminals open in Terminal-Normal mode in a 12-line bottom split, remain
 | `:Telescope keymaps` | Search all active keymaps |
 | `:ConformInfo` | Inspect formatting for the current buffer |
 | `:checkhealth` | Run Neovim and plugin health checks |
+| `:checkhealth kickstart` | Check this config's own required and optional external tools |
 | `:messages` | Review recent notifications and errors |
 
 Which-key opens immediately after a recognized prefix and groups search under `<leader>s`, terminal actions under `<leader>t`, and LSP actions under `gr`.

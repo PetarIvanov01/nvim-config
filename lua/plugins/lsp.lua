@@ -18,7 +18,7 @@ vim.api.nvim_create_user_command('LspLog', function()
   vim.cmd 'normal! G'
 end, { desc = 'open the LSP client log' })
 
-vim.api.nvim_create_autocmd('lspattach', {
+vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
   callback = function(event)
     local map = function(keys, func, desc, mode)
@@ -26,27 +26,30 @@ vim.api.nvim_create_autocmd('lspattach', {
       vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'lsp: ' .. desc })
     end
 
-    map('grn', vim.lsp.buf.rename, '[r]e[n]ame')
-    map('gra', vim.lsp.buf.code_action, '[g]oto code [a]ction', { 'n', 'x' })
+    -- `grn`, `gra`, `grr`, `gri`, `grt` and `grx` are Neovim defaults since
+    -- 0.11 (confirmed with `:verbose nmap gr` on 0.12.4), so they are not
+    -- redefined here. `grr`/`gri`/`grt`/`grd` *are* overridden buffer-locally
+    -- in plugins/telescope.lua, to swap the default quickfix list for a
+    -- Telescope picker. `grD` has no Neovim default, so it is mapped here.
     map('grD', vim.lsp.buf.declaration, '[g]oto [d]eclaration')
 
     local client = vim.lsp.get_client_by_id(event.data.client_id)
     if client and client:supports_method('textDocument/documentHighlight', event.buf) then
       local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
 
-      vim.api.nvim_create_autocmd({ 'cursorhold', 'cursorholdi' }, {
+      vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
         buffer = event.buf,
         group = highlight_augroup,
         callback = vim.lsp.buf.document_highlight,
       })
 
-      vim.api.nvim_create_autocmd({ 'cursormoved', 'cursormovedi' }, {
+      vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
         buffer = event.buf,
         group = highlight_augroup,
         callback = vim.lsp.buf.clear_references,
       })
 
-      vim.api.nvim_create_autocmd('lspdetach', {
+      vim.api.nvim_create_autocmd('LspDetach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
         callback = function(event2)
           vim.lsp.buf.clear_references()
@@ -57,6 +60,21 @@ vim.api.nvim_create_autocmd('lspattach', {
 
     if client and client:supports_method('textDocument/inlayHint', event.buf) then
       map('<leader>th', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }) end, '[t]oggle inlay [h]ints')
+    end
+
+    -- Code lens is off by default in Neovim (`vim.lsp.codelens.is_enabled()`
+    -- returns false on a stock 0.12.4), so the `referencesCodeLens` /
+    -- `implementationsCodeLens` settings requested from vtsls below were being
+    -- computed by the server and then never rendered. Turn it on where the
+    -- server actually provides it; `grx` (a Neovim default) runs the lens under
+    -- the cursor. Remove this block to go back to no lenses.
+    if client and client:supports_method('textDocument/codeLens', event.buf) then
+      vim.lsp.codelens.enable(true, { bufnr = event.buf })
+      map(
+        '<leader>tl',
+        function() vim.lsp.codelens.enable(not vim.lsp.codelens.is_enabled { bufnr = event.buf }, { bufnr = event.buf }) end,
+        '[t]oggle code [l]ens'
+      )
     end
   end,
 })
@@ -84,6 +102,43 @@ local function vtsls_hints(extra)
   }, extra or {})
 end
 
+-- lspconfig prefers a project-local server binary over the Mason/PATH one by
+-- joining `<root_dir>/node_modules/.bin/<name>` -- but on Windows that
+-- extensionless path is npm's *POSIX shell script* shim, which CreateProcess
+-- cannot run. `executable()` still answers 1 for it (it is a file that exists,
+-- and for a full path Vim does not require a PATHEXT extension), so lspconfig
+-- picks it and the spawn dies with "Spawning language server with cmd: { ... }
+-- failed. The language server is either not installed, missing from PATH, or
+-- not executable." The runnable sibling shim is `<name>.cmd`, so try that
+-- first. Every server lspconfig resolves this way needs it -- oxlint, eslint,
+-- html and cssls below all do. Off Windows the loop collapses to lspconfig's
+-- own behaviour, so no `is_win` guard is needed.
+--
+-- The binary names are repeated from lspconfig's own `lsp/<name>.lua`; if a
+-- server stops starting after an lspconfig update, check its `cmd` there first.
+local function node_bin_cmd(name, ...)
+  local args = { ... }
+  -- The bare name is deliberately *not* a Windows candidate: it is the broken
+  -- shim, and falling through to Mason/PATH beats failing to spawn at all.
+  local candidates = vim.fn.has 'win32' == 1 and { name .. '.cmd', name .. '.exe' } or { name }
+
+  return function(dispatchers, config)
+    local cmd = name
+
+    if (config or {}).root_dir then
+      for _, candidate in ipairs(candidates) do
+        local local_cmd = vim.fs.joinpath(config.root_dir, 'node_modules/.bin', candidate)
+        if vim.fn.executable(local_cmd) == 1 then
+          cmd = local_cmd
+          break
+        end
+      end
+    end
+
+    return vim.lsp.rpc.start(vim.list_extend({ cmd }, args), dispatchers)
+  end
+end
+
 ---@type table<string, vim.lsp.config>
 local servers = {
   -- The TypeScript/JavaScript server for every project, regardless of the
@@ -108,10 +163,10 @@ local servers = {
   -- project-side concern, not something to paper over here.
   --
   -- Fixes are on demand only, via :LspEslintFixAll and :LspOxlintFixAll.
-  eslint = {},
-  oxlint = {},
-  html = {},
-  cssls = {},
+  eslint = { cmd = node_bin_cmd('vscode-eslint-language-server', '--stdio') },
+  oxlint = { cmd = node_bin_cmd('oxlint', '--lsp') },
+  html = { cmd = node_bin_cmd('vscode-html-language-server', '--stdio') },
+  cssls = { cmd = node_bin_cmd('vscode-css-language-server', '--stdio') },
   lua_ls = {
     on_init = function(client)
       -- Formatting is handled by Conform and StyLua.
@@ -122,14 +177,22 @@ local servers = {
         if path ~= vim.fn.stdpath 'config' and (vim.uv.fs_stat(path .. '/.luarc.json') or vim.uv.fs_stat(path .. '/.luarc.jsonc')) then return end
       end
 
+      -- These keys are case-sensitive on the server side, unlike Vim option and
+      -- autocmd names: lua-language-server flattens the settings table into
+      -- dotted keys and looks each one up verbatim in its config template
+      -- (script/config/config.lua, `expand()` -> `template[fullKey]`), silently
+      -- dropping anything that does not match. A lowercase `lua` key made every
+      -- setting below a no-op -- most visibly `workspace.library`, without which
+      -- editing this config gets no Neovim API completion and an undefined-global
+      -- `vim` warning. Must be `Lua`, `checkThirdParty`, `LuaJIT`.
       local current_settings = client.config.settings --[[@as lspconfig.settings.lua_ls]]
-      client.config.settings.lua = vim.tbl_deep_extend('force', current_settings.lua, {
+      client.config.settings.Lua = vim.tbl_deep_extend('force', current_settings.Lua, {
         runtime = {
-          version = 'luajit',
+          version = 'LuaJIT',
           path = { 'lua/?.lua', 'lua/?/init.lua' },
         },
         workspace = {
-          checkthirdparty = false,
+          checkThirdParty = false,
           -- Runtime files are needed when editing the Neovim configuration itself.
           library = vim.api.nvim_get_runtime_file('', true),
         },
@@ -137,7 +200,7 @@ local servers = {
     end,
     ---@type lspconfig.settings.lua_ls
     settings = {
-      lua = {
+      Lua = {
         format = { enable = false },
       },
     },
@@ -149,8 +212,9 @@ require('mason-lspconfig').setup {
   automatic_enable = false,
 }
 
+-- Only the language servers above. Formatters (stylua, prettier) are expected
+-- on PATH or in the project, not installed by Mason -- see :checkhealth kickstart.
 local ensure_installed = vim.tbl_keys(servers or {})
-vim.list_extend(ensure_installed, {})
 
 require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
