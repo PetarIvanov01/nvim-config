@@ -4,6 +4,10 @@ local shell = require 'config.shell'
 
 local current = nil
 
+-- Buffers that were on screen when the panel was last hidden, left to right.
+-- Toggling back brings the same panes up in the same order.
+local last_layout = {}
+
 -- Return all terminal buffers created by this module.
 local function terminals()
   local result = {}
@@ -15,15 +19,50 @@ local function terminals()
   return result
 end
 
--- Find the window currently showing one of our terminals.
-local function terminal_window()
+-- Every window currently showing one of our terminals.
+local function terminal_windows()
+  local result = {}
+
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     local buf = vim.api.nvim_win_get_buf(win)
 
-    if vim.b[buf].custom_terminal then return win end
+    if vim.b[buf].custom_terminal then table.insert(result, win) end
   end
 
-  return nil
+  return result
+end
+
+-- The terminal window a command should act on: the focused one when a terminal
+-- has focus, otherwise the leftmost pane on screen.
+local function terminal_window()
+  local win = vim.api.nvim_get_current_win()
+
+  if vim.b[vim.api.nvim_win_get_buf(win)].custom_terminal then return win end
+
+  return terminal_windows()[1]
+end
+
+-- The terminal a command should act on: whatever sits in the acting window,
+-- falling back to the last one shown while the panel is hidden.
+local function active_buf()
+  local win = terminal_window()
+
+  if win then return vim.api.nvim_win_get_buf(win) end
+
+  return current
+end
+
+-- Terminals visible in a pane other than the acting one, so cycling never puts
+-- the same terminal on screen twice.
+local function shown_elsewhere()
+  local set = {}
+  local acting = terminal_window()
+
+  for _, win in ipairs(terminal_windows()) do
+    if win ~= acting then set[vim.api.nvim_win_get_buf(win)] = true end
+  end
+
+  return set
 end
 
 local function open_window()
@@ -46,11 +85,8 @@ local function show(buf)
   vim.cmd 'stopinsert'
 end
 
-function M.new()
-  local win = terminal_window()
-
-  if not win then win = open_window() end
-
+-- Start a shell in `win`, replacing whatever it holds.
+local function spawn(win)
   vim.api.nvim_set_current_win(win)
 
   vim.cmd 'enew'
@@ -77,6 +113,59 @@ function M.new()
   vim.cmd 'stopinsert'
 end
 
+function M.new()
+  local win = terminal_window()
+
+  if not win then win = open_window() end
+
+  spawn(win)
+end
+
+-- Open a terminal beside the current one instead of replacing it.
+function M.vnew()
+  local win = terminal_window()
+
+  -- Nothing on screen yet -> the first terminal is the panel itself
+  if not win then
+    spawn(open_window())
+    return
+  end
+
+  vim.api.nvim_set_current_win(win)
+
+  vim.cmd 'rightbelow vsplit'
+
+  spawn(vim.api.nvim_get_current_win())
+end
+
+-- Bring the remembered panes back, side by side.
+local function restore(list)
+  local bufs = {}
+
+  for _, buf in ipairs(last_layout) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.b[buf].custom_terminal then table.insert(bufs, buf) end
+  end
+
+  if #bufs == 0 then
+    local buf = current
+
+    if not buf or not vim.api.nvim_buf_is_valid(buf) then buf = list[1] end
+
+    bufs = { buf }
+  end
+
+  local win = open_window()
+
+  vim.api.nvim_win_set_buf(win, bufs[1])
+
+  for i = 2, #bufs do
+    vim.cmd 'rightbelow vsplit'
+    vim.api.nvim_win_set_buf(vim.api.nvim_get_current_win(), bufs[i])
+  end
+
+  show(current and vim.tbl_contains(bufs, current) and current or bufs[1])
+end
+
 function M.toggle()
   local list = terminals()
 
@@ -86,18 +175,25 @@ function M.toggle()
     return
   end
 
-  local win = terminal_window()
+  local wins = terminal_windows()
 
-  -- Visible -> hide
-  if win then
-    vim.api.nvim_win_hide(win)
+  -- Visible -> hide every pane, remembering the layout
+  if #wins > 0 then
+    last_layout = {}
+
+    for _, win in ipairs(wins) do
+      table.insert(last_layout, vim.api.nvim_win_get_buf(win))
+    end
+
+    for _, win in ipairs(wins) do
+      vim.api.nvim_win_hide(win)
+    end
+
     return
   end
 
-  -- Hidden -> show current terminal again
-  if not current or not vim.api.nvim_buf_is_valid(current) then current = list[1] end
-
-  show(current)
+  -- Hidden -> show the same panes again
+  restore(list)
 end
 
 function M.focus()
@@ -118,12 +214,12 @@ function M.focus()
   end
 
   -- Hidden -> open and focus it
-  if not current or not vim.api.nvim_buf_is_valid(current) then current = list[1] end
-
-  show(current)
+  restore(list)
 end
 
-function M.next()
+-- Walk the terminal list from the pane's current terminal, skipping any that
+-- another pane is already showing.
+local function cycle(step)
   local list = terminals()
 
   if #list == 0 then
@@ -131,41 +227,31 @@ function M.next()
     return
   end
 
+  local anchor = active_buf()
   local index = 1
 
   for i, buf in ipairs(list) do
-    if buf == current then
+    if buf == anchor then
       index = i
       break
     end
   end
 
-  index = index % #list + 1
+  local busy = shown_elsewhere()
 
-  show(list[index])
-end
+  for _ = 1, #list do
+    index = (index - 1 + step) % #list + 1
 
-function M.prev()
-  local list = terminals()
-
-  if #list == 0 then
-    M.new()
-    return
-  end
-
-  local index = 1
-
-  for i, buf in ipairs(list) do
-    if buf == current then
-      index = i
-      break
+    if not busy[list[index]] then
+      show(list[index])
+      return
     end
   end
-
-  index = (index - 2) % #list + 1
-
-  show(list[index])
 end
+
+function M.next() cycle(1) end
+
+function M.prev() cycle(-1) end
 
 function M.close()
   local list = terminals()
@@ -175,24 +261,53 @@ function M.close()
     return
   end
 
-  local buf = current
+  local buf = active_buf()
 
   if not buf or not vim.api.nvim_buf_is_valid(buf) then return end
 
+  local busy = shown_elsewhere()
   local next_buf
 
   for i, terminal_buf in ipairs(list) do
     if terminal_buf == buf then
-      next_buf = list[i + 1] or list[i - 1]
+      -- Take over a neighbour no other pane is already showing
+      local candidates = {}
+
+      if list[i + 1] then table.insert(candidates, list[i + 1]) end
+      if list[i - 1] then table.insert(candidates, list[i - 1]) end
+
+      for _, candidate in ipairs(candidates) do
+        if not busy[candidate] then
+          next_buf = candidate
+          break
+        end
+      end
+
       break
     end
   end
+
+  -- Grab the pane before the delete: afterwards it no longer holds a terminal,
+  -- so `terminal_window()` would hand back a different one.
+  local win = terminal_window()
 
   vim.api.nvim_buf_delete(buf, { force = true })
 
   current = next_buf
 
-  if next_buf then show(next_buf) end
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    if next_buf then show(next_buf) end
+    return
+  end
+
+  if next_buf then
+    vim.api.nvim_win_set_buf(win, next_buf)
+    vim.api.nvim_set_current_win(win)
+    vim.cmd 'stopinsert'
+  else
+    -- Every remaining terminal is already on screen -> drop the empty pane
+    pcall(vim.api.nvim_win_close, win, true)
+  end
 end
 
 M.float = function(cmd)
