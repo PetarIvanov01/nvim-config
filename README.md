@@ -14,6 +14,7 @@ See [CHEATSHEET.md](CHEATSHEET.md) for the command and key reference
 - Git for Windows, for Git Bash and custom terminals — `bash.exe` is auto-detected from `git` on `PATH` or the standard Git for Windows install locations (see `lua/config/shell.lua`)
 - Optional: `make` for Telescope's native FZF extension and supported plugin build hooks
 - Node.js, for `vtsls`, `eslint`, `oxlint`, and `:TSC`
+- Optional: the [Odin](https://odin-lang.org/) compiler on `PATH`, for `ols`'s type checking and its `core`/`vendor` collections — `ols` and `odinfmt` themselves come from Mason
 
 Run `:checkhealth kickstart` to verify all of the above at once — each optional tool it reports names the single feature that stops working without it.
 
@@ -189,6 +190,7 @@ Configured language servers:
 - HTML (`html`)
 - CSS (`cssls`)
 - Lua (`lua_ls`)
+- Odin (`ols`)
 
 Use `:Mason` to inspect installed language tooling. Diagnostic jumps use Neovim's normal diagnostic mappings; the configuration opens a rounded diagnostic float after a jump.
 
@@ -206,7 +208,9 @@ Neovim 0.12 ships a native `:lsp` command, which makes nvim-lspconfig skip its `
 | --- | --- | --- |
 | Normal/Visual | `<leader>f` | Format the buffer or selection synchronously with Conform |
 
-Formatting is manual: there is no format-on-save, so `<leader>f` is the only way to format. It's configured for Lua, JavaScript, JSX, TypeScript, TSX, HTML, CSS, JSON, and JSONC. Lua uses `stylua`; the other configured filetypes use `prettier`. LSP formatting is used as a fallback.
+Formatting is manual: there is no format-on-save, so `<leader>f` is the only way to format. It's configured for Lua, Odin, JavaScript, JSX, TypeScript, TSX, HTML, CSS, JSON, and JSONC. Lua uses `stylua`, Odin uses `odinfmt`; the other configured filetypes use `prettier`. LSP formatting is used as a fallback.
+
+`odinfmt` is defined by hand in `lua/plugins/formatting.lua` — Conform has no built-in for it, and it comes from Mason's `ols` package rather than from `PATH`. It reads its settings from an `odinfmt.json` found by walking up from the process working directory, and under `-stdin` it is never told which file it is formatting; Conform therefore runs it from the buffer's own directory, so a project's `odinfmt.json` applies no matter where Neovim's `:pwd` happens to be. Without one, odinfmt's own defaults (tabs, 100 columns) apply.
 
 Use `:ConformInfo` to see the formatter selected for the current buffer and whether its executable is available.
 

@@ -20,6 +20,7 @@ local parsers = {
   'luadoc',
   'markdown',
   'markdown_inline',
+  'odin',
   'query',
   'tsx',
   'typescript',

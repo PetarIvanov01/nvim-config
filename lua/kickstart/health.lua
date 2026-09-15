@@ -55,6 +55,12 @@ local optional = {
   { exe = 'stylua', reason = 'Lua formatting on <leader>f; Conform falls back to LSP formatting' },
   { exe = 'prettier', reason = 'JS/TS/HTML/CSS/JSON formatting on <leader>f; Conform falls back to LSP formatting' },
   { exe = 'node', reason = 'vtsls, eslint and oxlint all run on Node' },
+  -- ols and odinfmt themselves are installed by Mason with the rest of the
+  -- language servers, so they are not checked here -- but the Odin compiler is
+  -- not, and ols shells out to it to type-check and to resolve the core/vendor
+  -- collections. Without it the server still attaches and still completes, it
+  -- just stops reporting real errors.
+  { exe = 'odin', reason = "ols's type checking and its core/vendor collections; completion still works without it" },
   -- tsc.nvim searches upward for node_modules/.bin/tsc first (utils.find_tsc_bin)
   -- and only falls back to PATH, so this warning is harmless inside a project
   -- that has TypeScript installed -- which is the case :TSC is built for.
