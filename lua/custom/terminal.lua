@@ -105,6 +105,13 @@ local function spawn(win)
   -- Keep terminal alive when its window is hidden
   vim.bo[buf].bufhidden = 'hide'
 
+  -- `:enew` above creates an ordinary listed buffer and `jobstart` converts it
+  -- in place, so without this the terminal stays in the `:buffers` list and
+  -- `:bnext`/`:bprevious` cycle onto it. Terminal navigation here does not rely
+  -- on the listed state -- `terminals()` scans `nvim_list_bufs()` for the
+  -- `custom_terminal` flag -- so unlisting costs nothing.
+  vim.bo[buf].buflisted = false
+
   -- Mark this buffer as one of our custom terminals
   vim.b[buf].custom_terminal = true
 

@@ -1,7 +1,11 @@
 local map = vim.keymap.set
 
-map('n', '<s-h>', '<cmd>bprevious<cr>', { desc = 'previous buffer' })
-map('n', '<s-l>', '<cmd>bnext<cr>', { desc = 'next buffer' })
+-- Bufferline's own cycling rather than `:bprevious`/`:bnext`: it walks the tabs
+-- in the order they are drawn and honours the `custom_filter` in
+-- lua/plugins/ui.lua, so the cycle matches what is on screen. The plain
+-- commands walk every listed buffer in buffer-number order instead.
+map('n', '<s-h>', '<cmd>BufferLineCyclePrev<cr>', { desc = 'previous buffer' })
+map('n', '<s-l>', '<cmd>BufferLineCycleNext<cr>', { desc = 'next buffer' })
 
 map('n', '<leader>v', '<cmd>vsplit<cr>', { desc = 'vertical split' })
 
