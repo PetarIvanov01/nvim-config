@@ -33,6 +33,7 @@ map('n', '<leader>gg', function() terminal.float 'lazygit' end, {
   desc = '[g]it lazy[g]it',
 })
 map({ 'n' }, '<leader>`', terminal.toggle, { desc = 'toggle terminal' })
+map({ 'n' }, '<leader>tf', terminal.full, { desc = '[f]ull-screen terminal' })
 map({ 'n' }, '<leader>tn', terminal.new, { desc = 'new terminal' })
 map({ 'n' }, '<leader>tv', terminal.vnew, { desc = 'new terminal in vertical split' })
 map({ 'n' }, '<leader>t]', terminal.next, { desc = 'next terminal' })

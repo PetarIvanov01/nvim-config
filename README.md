@@ -265,6 +265,7 @@ Folds are calculated from Treesitter syntax and start open, so files remain full
 | Mode | Key | Action |
 | --- | --- | --- |
 | Normal | ``<leader>` `` | Focus the terminal split, or hide it when it already has focus; creates one when necessary |
+| Normal | `<leader>tf` | Show the terminal full screen on its own tab page, or close that tab when already on it |
 | Normal | `<leader>tn` | Create a new terminal |
 | Normal | `<leader>tv` | Create a new terminal in a vertical split beside the current pane |
 | Normal | `<leader>t]` | Show the next managed terminal |
@@ -274,7 +275,7 @@ Folds are calculated from Treesitter syntax and start open, so files remain full
 | Terminal-Normal | `i` | Enter Terminal mode and type commands |
 | Terminal | `<Esc><Esc>` | Leave terminal-input mode and return to Normal mode |
 
-Managed terminals open in Terminal-Normal mode in a 12-line bottom split, remain alive when hidden, and use Git Bash as an interactive login shell. This lets terminal switching and window-navigation mappings work immediately; press `i` when you want to type. Floating commands close their window automatically when the command exits.
+Managed terminals open in Terminal-Normal mode in a 12-line bottom split, remain alive when hidden, and use Git Bash as an interactive login shell. `<leader>tf` is the same terminal at a second size: it moves onto a tab page of its own, where it fills the editor area, and the layout it came from waits untouched on the tab underneath. This lets terminal switching and window-navigation mappings work immediately; press `i` when you want to type. Floating commands close their window automatically when the command exits.
 
 ## Plugin and maintenance commands
 
