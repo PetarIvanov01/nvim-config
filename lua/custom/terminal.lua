@@ -184,44 +184,42 @@ function M.toggle()
 
   local wins = terminal_windows()
 
-  -- Visible -> hide every pane, remembering the layout
-  if #wins > 0 then
-    last_layout = {}
-
-    for _, win in ipairs(wins) do
-      table.insert(last_layout, vim.api.nvim_win_get_buf(win))
-    end
-
-    for _, win in ipairs(wins) do
-      vim.api.nvim_win_hide(win)
-    end
-
-    return
-  end
-
   -- Hidden -> show the same panes again
-  restore(list)
-end
-
-function M.focus()
-  local list = terminals()
-
-  -- No terminal yet -> create the first one
-  if #list == 0 then
-    M.new()
+  if #wins == 0 then
+    restore(list)
     return
   end
 
-  local win = terminal_window()
+  -- On screen but the cursor is elsewhere -> step into it rather than hide it.
+  -- Hiding a panel you are only looking at costs two keystrokes to get back,
+  -- and it is never what the key was pressed for while editing.
+  if not vim.b[vim.api.nvim_get_current_buf()].custom_terminal then
+    local target = wins[1]
 
-  -- Visible -> just move focus to it
-  if win then
-    vim.api.nvim_set_current_win(win)
+    -- Prefer the pane holding the terminal last worked in, so focus returns
+    -- where it left off instead of always to the leftmost pane.
+    for _, win in ipairs(wins) do
+      if vim.api.nvim_win_get_buf(win) == current then
+        target = win
+        break
+      end
+    end
+
+    vim.api.nvim_set_current_win(target)
+
     return
   end
 
-  -- Hidden -> open and focus it
-  restore(list)
+  -- Focused -> hide every pane, remembering the layout
+  last_layout = {}
+
+  for _, win in ipairs(wins) do
+    table.insert(last_layout, vim.api.nvim_win_get_buf(win))
+  end
+
+  for _, win in ipairs(wins) do
+    vim.api.nvim_win_hide(win)
+  end
 end
 
 -- Walk the terminal list from the pane's current terminal, skipping any that

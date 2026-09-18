@@ -264,9 +264,9 @@ Folds are calculated from Treesitter syntax and start open, so files remain full
 
 | Mode | Key | Action |
 | --- | --- | --- |
-| Normal | `<leader>tt` | Show or hide the terminal split; creates one when necessary |
-| Normal | `<leader>tf` | Focus the terminal split without toggling it closed; creates and focuses one when necessary |
+| Normal | ``<leader>` `` | Focus the terminal split, or hide it when it already has focus; creates one when necessary |
 | Normal | `<leader>tn` | Create a new terminal |
+| Normal | `<leader>tv` | Create a new terminal in a vertical split beside the current pane |
 | Normal | `<leader>t]` | Show the next managed terminal |
 | Normal | `<leader>t[` | Show the previous managed terminal |
 | Normal | `<leader>tc` | Close the current managed terminal; the last terminal is protected |
