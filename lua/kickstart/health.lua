@@ -90,7 +90,7 @@ end
 
 -- config/shell.lua locates Git Bash by probing several install locations and
 -- silently falls back to Neovim's defaults when it finds nothing, which is easy
--- to miss until `:!` or <leader>tt behaves unexpectedly.
+-- to miss until `:!` or the terminal behaves unexpectedly.
 local check_shell = function()
   local ok, shell = pcall(require, 'config.shell')
   if not ok then
