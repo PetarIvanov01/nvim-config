@@ -47,7 +47,7 @@ vim.keymap.set(
   { desc = '[s]earch by [g]rep' }
 )
 vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[s]earch [d]iagnostics' })
-vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[s]earch [r]esume' })
+vim.keymap.set('n', '<leader>sR', builtin.resume, { desc = '[s]earch [R]esume' })
 vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[s]earch recent files ("." for repeat)' })
 vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[s]earch [c]ommands' })
 vim.keymap.set('n', '<leader><leader>', require('telescope.builtin').find_files, { desc = '[ ] find files' })
