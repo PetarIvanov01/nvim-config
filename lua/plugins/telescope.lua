@@ -108,6 +108,26 @@ vim.keymap.set('n', '<leader>bb', '<cmd>enew<cr>', {
   desc = '[b]uffer new',
 })
 
+vim.keymap.set('n', '<leader>ba', function()
+  local current = vim.api.nvim_get_current_buf()
+  local closed, kept = 0, 0
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if buf ~= current and vim.bo[buf].buflisted then
+      if vim.bo[buf].modified then
+        kept = kept + 1
+      else
+        vim.api.nvim_buf_delete(buf, {})
+        closed = closed + 1
+      end
+    end
+  end
+  if kept > 0 then
+    vim.notify(('closed %d buffers, kept %d unsaved'):format(closed, kept), vim.log.levels.WARN)
+  end
+end, {
+  desc = '[b]uffer close [a]ll but current',
+})
+
 vim.keymap.set('n', '<leader>sb', require('telescope.builtin').buffers, {
   desc = '[s]earch [b]uffers',
 })
