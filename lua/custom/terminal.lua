@@ -8,6 +8,9 @@ local current = nil
 -- Toggling back brings the same panes up in the same order.
 local last_layout = {}
 
+-- The tab page holding the full-screen terminal, while one is open.
+local full_tab = nil
+
 -- Return all terminal buffers created by this module.
 local function terminals()
   local result = {}
@@ -19,11 +22,14 @@ local function terminals()
   return result
 end
 
--- Every window currently showing one of our terminals.
+-- Every window currently showing one of our terminals. Scoped to the current
+-- tab page: `nvim_list_wins()` spans every tab, so the full-screen terminal in
+-- its own tab would otherwise count as a visible pane here, and focusing it
+-- would yank the cursor onto another tab page.
 local function terminal_windows()
   local result = {}
 
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     local buf = vim.api.nvim_win_get_buf(win)
 
     if vim.b[buf].custom_terminal then table.insert(result, win) end
@@ -184,44 +190,83 @@ function M.toggle()
 
   local wins = terminal_windows()
 
-  -- Visible -> hide every pane, remembering the layout
-  if #wins > 0 then
-    last_layout = {}
+  -- Hidden -> show the same panes again
+  if #wins == 0 then
+    restore(list)
+    return
+  end
 
+  -- On screen but the cursor is elsewhere -> step into it rather than hide it.
+  -- Hiding a panel you are only looking at costs two keystrokes to get back,
+  -- and it is never what the key was pressed for while editing.
+  if not vim.b[vim.api.nvim_get_current_buf()].custom_terminal then
+    local target = wins[1]
+
+    -- Prefer the pane holding the terminal last worked in, so focus returns
+    -- where it left off instead of always to the leftmost pane.
     for _, win in ipairs(wins) do
-      table.insert(last_layout, vim.api.nvim_win_get_buf(win))
+      if vim.api.nvim_win_get_buf(win) == current then
+        target = win
+        break
+      end
     end
 
-    for _, win in ipairs(wins) do
-      vim.api.nvim_win_hide(win)
-    end
+    vim.api.nvim_set_current_win(target)
 
     return
   end
 
-  -- Hidden -> show the same panes again
-  restore(list)
+  -- Focused -> hide every pane, remembering the layout
+  last_layout = {}
+
+  for _, win in ipairs(wins) do
+    table.insert(last_layout, vim.api.nvim_win_get_buf(win))
+  end
+
+  for _, win in ipairs(wins) do
+    vim.api.nvim_win_hide(win)
+  end
 end
 
-function M.focus()
-  local list = terminals()
+-- Show a terminal on a tab page of its own, which is the whole editor area. The
+-- layout it was called from sits untouched on the tab underneath, so this is a
+-- second size for the same terminal rather than a second terminal.
+function M.full()
+  if full_tab and vim.api.nvim_tabpage_is_valid(full_tab) then
+    -- Open but on another tab page -> step into it, the same way M.toggle
+    -- reaches a visible panel before it will hide one.
+    if vim.api.nvim_get_current_tabpage() ~= full_tab then
+      vim.api.nvim_set_current_tabpage(full_tab)
+      return
+    end
 
-  -- No terminal yet -> create the first one
-  if #list == 0 then
-    M.new()
+    vim.cmd 'tabclose'
+    full_tab = nil
+
     return
   end
 
-  local win = terminal_window()
+  local buf = active_buf()
 
-  -- Visible -> just move focus to it
-  if win then
-    vim.api.nvim_set_current_win(win)
+  -- `tab split` rather than `tabnew`: it carries the current buffer over, so no
+  -- empty no-name buffer is created for the terminal to immediately replace.
+  vim.cmd 'tab split'
+
+  full_tab = vim.api.nvim_get_current_tabpage()
+
+  local win = vim.api.nvim_get_current_win()
+
+  -- No terminal to borrow -> the first one starts here, full screen
+  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    spawn(win)
     return
   end
 
-  -- Hidden -> open and focus it
-  restore(list)
+  vim.api.nvim_win_set_buf(win, buf)
+
+  current = buf
+
+  vim.cmd 'stopinsert'
 end
 
 -- Walk the terminal list from the pane's current terminal, skipping any that
