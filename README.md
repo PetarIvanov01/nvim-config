@@ -277,6 +277,8 @@ Folds are calculated from Treesitter syntax and start open, so files remain full
 
 Managed terminals open in Terminal-Normal mode in a 12-line bottom split, remain alive when hidden, and use Git Bash as an interactive login shell. `<leader>tf` is the same terminal at a second size: it moves onto a tab page of its own, where it fills the editor area, and the layout it came from waits untouched on the tab underneath. This lets terminal switching and window-navigation mappings work immediately; press `i` when you want to type. Floating commands close their window automatically when the command exits.
 
+Inside `lazygit`, `o` and `e` open the file under the cursor in this Neovim, in the window `<leader>gg` was pressed from, and the float closes with it. `lua/custom/lazygit.lua` arranges that: it writes a `lazygit` config with this instance's RPC address baked in and points `lazygit` at it with `LG_CONFIG_FILE`, next to the personal config in `%LOCALAPPDATA%\lazygit\config.yml`. Without it `o` hands the file to whatever application the extension is associated with, and `e` opens a second Neovim nested inside the float.
+
 ## Plugin and maintenance commands
 
 | Command | Purpose |

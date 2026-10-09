@@ -374,6 +374,7 @@ Treesitter calculates folds; files start fully open.
 | `<leader>t]` / `<leader>t[` | Next / previous managed terminal |
 | `<leader>tc` | Close current managed terminal; last one is protected |
 | `<leader>gg` | Open Lazygit in floating terminal |
+| Lazygit `o` / `e` | Open the selected file in this Neovim and close the float |
 | Terminal-Normal `i` | Start typing in the terminal |
 | Terminal `<Esc><Esc>` | Leave Terminal mode |
 
