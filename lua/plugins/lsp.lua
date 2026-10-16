@@ -234,3 +234,9 @@ for name, server in pairs(servers) do
   vim.lsp.config(name, server)
   vim.lsp.enable(name)
 end
+
+-- Rust LSP is managed by rustup, not Mason.
+vim.lsp.enable('rust_analyzer')
+
+-- C/C++ LSP is installed through Ubuntu apt, not Mason.
+vim.lsp.enable('clangd')
