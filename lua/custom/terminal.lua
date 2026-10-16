@@ -73,7 +73,14 @@ end
 
 local function open_window()
   vim.cmd 'botright 12split'
-  return vim.api.nvim_get_current_win()
+
+  local win = vim.api.nvim_get_current_win()
+
+  -- Keep the panel 12 lines tall when windows above it come and go, instead of
+  -- letting Vim's equalisation resize it along with them.
+  vim.wo[win].winfixheight = true
+
+  return win
 end
 
 local function show(buf)

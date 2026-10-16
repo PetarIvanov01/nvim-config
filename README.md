@@ -103,9 +103,11 @@ Useful forms:
 | --- | --- |
 | `<leader>bn` | Open the next buffer |
 | `<leader>bp` | Open the previous buffer |
-| `<leader>bd` | Delete the current buffer |
+| `<leader>bd` | Delete the current buffer, leaving its window in place |
 | `<leader>bb` | Create a new empty buffer |
 | `<leader>sb` | Search open buffers with Telescope |
+
+Deleting a buffer never takes its window with it. `:bdelete` on its own closes every window showing the buffer, so with the terminal panel open the editor window above it would disappear and the 12-line panel would stretch over the whole screen. `<leader>bd` points those windows at something else first -- the buffer they were on before, the next one in the buffer list, or an empty buffer once the last file is gone -- so the split layout survives the delete. `lua/custom/buffer.lua` has it.
 
 ## File explorer
 

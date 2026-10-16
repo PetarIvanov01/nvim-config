@@ -92,6 +92,8 @@ vim.keymap.set(
 
 vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config', follow = true } end, { desc = '[s]earch [n]eovim files' })
 
+local buffer = require 'custom.buffer'
+
 vim.keymap.set('n', '<leader>bn', '<cmd>bnext<cr>', {
   desc = '[b]uffer [n]ext',
 })
@@ -100,7 +102,11 @@ vim.keymap.set('n', '<leader>bp', '<cmd>bprevious<cr>', {
   desc = '[b]uffer [p]revious',
 })
 
-vim.keymap.set('n', '<leader>bd', '<cmd>bdelete<cr>', {
+vim.keymap.set('n', '<leader>bd', function()
+  local deleted, reason = buffer.remove()
+
+  if not deleted then vim.notify(reason, vim.log.levels.WARN) end
+end, {
   desc = '[b]uffer [d]elete',
 })
 
@@ -113,11 +119,10 @@ vim.keymap.set('n', '<leader>ba', function()
   local closed, kept = 0, 0
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     if buf ~= current and vim.bo[buf].buflisted then
-      if vim.bo[buf].modified then
-        kept = kept + 1
-      else
-        vim.api.nvim_buf_delete(buf, {})
+      if buffer.remove(buf) then
         closed = closed + 1
+      else
+        kept = kept + 1
       end
     end
   end
