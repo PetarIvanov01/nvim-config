@@ -169,7 +169,7 @@ Mark workflow across files: set `mA` in the source file â†’ navigate anywhere â†
 | `<S-h>` (`H`) / `<leader>bp` | Previous buffer |
 | `<S-l>` (`L`) / `<leader>bn` | Next buffer |
 | `<leader>bb` | New empty buffer |
-| `<leader>bd` | Delete current buffer |
+| `<leader>bd` | Delete current buffer; its window stays and shows the next one |
 | `<leader>sb` | Search buffers with Telescope |
 | `:buffers` | List buffers; jump with `:buffer {number}` |
 | `:b#` | Switch to alternate buffer |
@@ -374,6 +374,7 @@ Treesitter calculates folds; files start fully open.
 | `<leader>t]` / `<leader>t[` | Next / previous managed terminal |
 | `<leader>tc` | Close current managed terminal; last one is protected |
 | `<leader>gg` | Open Lazygit in floating terminal |
+| Lazygit `o` / `e` | Open the selected file in this Neovim and close the float |
 | Terminal-Normal `i` | Start typing in the terminal |
 | Terminal `<Esc><Esc>` | Leave Terminal mode |
 

@@ -73,7 +73,14 @@ end
 
 local function open_window()
   vim.cmd 'botright 12split'
-  return vim.api.nvim_get_current_win()
+
+  local win = vim.api.nvim_get_current_win()
+
+  -- Keep the panel 12 lines tall when windows above it come and go, instead of
+  -- letting Vim's equalisation resize it along with them.
+  vim.wo[win].winfixheight = true
+
+  return win
 end
 
 local function show(buf)
@@ -362,7 +369,13 @@ function M.close()
   end
 end
 
-M.float = function(cmd)
+---Run `cmd` in a centered floating terminal that closes when it exits.
+---@param cmd string|string[]
+---@param opts? { env: table<string, string> } extra environment for the command
+---@return { win: integer, buf: integer, job: integer } handle so the caller can close the float itself
+M.float = function(cmd, opts)
+  opts = opts or {}
+
   local width = math.floor(vim.o.columns * 0.85)
   local height = math.floor(vim.o.lines * 0.85)
 
@@ -381,13 +394,17 @@ M.float = function(cmd)
     border = 'rounded',
   })
 
-  vim.fn.termopen(cmd, {
+  local job = vim.fn.jobstart(cmd, {
+    term = true,
+    env = opts.env,
     on_exit = function()
       if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
     end,
   })
 
   vim.cmd 'startinsert'
+
+  return { win = win, buf = buf, job = job }
 end
 
 return M

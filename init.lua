@@ -13,5 +13,6 @@ require 'plugins.completion'
 require 'plugins.treesitter'
 require 'plugins.neo-tree'
 require 'plugins.markdown'
+require 'plugins.grug-far'
 
 -- vim: ts=2 sts=2 sw=2 et

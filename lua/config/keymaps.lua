@@ -28,8 +28,9 @@ map('i', '<c-l>', function() require('blink.cmp').show() end, {
 })
 
 local terminal = require 'custom.terminal'
+local lazygit = require 'custom.lazygit'
 
-map('n', '<leader>gg', function() terminal.float 'lazygit' end, {
+map('n', '<leader>gg', lazygit.open, {
   desc = '[g]it lazy[g]it',
 })
 map({ 'n' }, '<leader>`', terminal.toggle, { desc = 'toggle terminal' })
